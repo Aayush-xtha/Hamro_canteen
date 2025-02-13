@@ -265,7 +265,7 @@ if($result->num_rows >0){
                 <table>
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            
                             <th>Name</th>
                             
                             <th>Image</th>
@@ -281,7 +281,7 @@ if($result->num_rows >0){
                         if (mysqli_num_rows($result) > 0) {
                             while ($row = mysqli_fetch_assoc($result)) {
                                 echo "<tr>
-                                    <td>{$row['id']}</td>
+                                    
                                     <td>{$row['category_name']}</td>
                                     
                                     <td><img src='./uploads/{$row['image']}' alt='Food Image'></td>

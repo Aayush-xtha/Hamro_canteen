@@ -9,7 +9,7 @@ if (isset($_GET['id'])) {
     $id = $_GET['id'];
 
     // Fetch the image name to delete it from the server
-    $sql = "SELECT image FROM category WHERE Id = $id";
+    $sql = "SELECT image FROM categories WHERE id = $id";
     $result = mysqli_query($conn, $sql);
 
     if ($result && mysqli_num_rows($result) == 1) {

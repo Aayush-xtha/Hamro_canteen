@@ -56,7 +56,6 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
 }
 ?>
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -66,19 +65,23 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="form-container">
-    <h1>Login</h1>
+  <div class="login-container">
+    <h2>Welcome Back!</h2>
     <form action="index.php" method="POST" enctype="multipart/form-data">
-      <label for="email">Email:</label>
-      <input type="email" id="email" name="email" placeholder="Enter your email" required>
-
-      <label for="password">Password:</label>
-      <input type="password" id="password" name="password" placeholder="Enter your password" required>
-
-      <button type="submit">Login</button>
-      
-      <a href="register.php" class="login-btn">Don't have an account? Register</a>
+      <div class="input-group">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+      </div>
+      <div class="input-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+      </div>
+      <button type="submit" class="login-button">Sign In</button>
+      <div class="registration-link">
+        <a href="register.php">Don't have an account? Register</a>
+      </div>
     </form>
   </div>
 </body>
 </html>
+

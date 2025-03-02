@@ -7,6 +7,7 @@ if (!isset($_SESSION['id'])) {
     header("Location: index.php");
     exit();
 }
+
 $branch_id = $_SESSION['id'];
 
 $sql = "SELECT * FROM branches WHERE id = '$branch_id'";
@@ -15,6 +16,23 @@ if($result->num_rows >0){
     $row = $result->fetch_assoc();
     $branchName = $row['branch_name'];
 }
+
+$history_sql = "SELECT 
+            o.id AS order_id, 
+            u.user_name, 
+            GROUP_CONCAT(f.food_name SEPARATOR ', ') AS order_items,
+            o.order_status,
+            p.method AS payment_method
+        FROM orders o
+        JOIN users u ON o.user_id = u.id
+        JOIN order_details od ON o.id = od.order_id
+        JOIN foods f ON od.food_id = f.id
+        LEFT JOIN payments p ON od.id = p.order_detail_id
+        WHERE od.branch_id = '$branch_id'
+        GROUP BY o.id, u.user_name, o.order_status, p.method
+        ORDER BY o.order_date DESC";
+
+$orderResult = mysqli_query($conn, $history_sql);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -217,22 +235,21 @@ if($result->num_rows >0){
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- You can replace this part with PHP code to fetch and display orders from your database -->
-                        <tr>
-                            <td>1</td>
-                            <td>JohnDoe</td>
-                            <td>Pizza, Coke</td>
-                            <td>Completed</td>
-                            <td>Credit Card</td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>JaneSmith</td>
-                            <td>Burger, Fries</td>
-                            <td>Pending</td>
-                            <td>PayPal</td>
-                        </tr>
-                        <!-- Add more rows as needed -->
+                        <?php if ($result->num_rows > 0): ?>
+                            <?php while ($row = $result->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?php echo $row['order_id']; ?></td>
+                                    <td><?php echo $row['user_name']; ?></td>
+                                    <td><?php echo $row['order_items']; ?></td>
+                                    <td><?php echo $row['order_status']; ?></td>
+                                    <td><?php echo $row['payment_method'] ? $row['payment_method'] : 'N/A'; ?></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="5" style="text-align: center;">No orders found for this branch.</td>
+                            </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>

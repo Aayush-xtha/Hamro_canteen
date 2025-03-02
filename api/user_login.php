@@ -31,7 +31,6 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
             echo json_encode([
                 "status" => "success",
                 "message" => ucfirst($userData['role']) . " login successful",
-                "role" => $userData['role'],
                 "data" => [
                     "id" => $userData['id'],
                     "first_name" => $userData['first_name'],

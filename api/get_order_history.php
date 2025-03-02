@@ -7,52 +7,96 @@ $headers = apache_request_headers();
 $authorizationHeader = isset($headers['Authorization']) ? $headers['Authorization'] : '';
 
 if ($authorizationHeader) {
-    // Extract Bearer token from the Authorization header
     if (preg_match('/Bearer\s(\S+)/', $authorizationHeader, $matches)) {
         $token = $matches[1];
 
-        // Verify the token
-        $sql = "SELECT u.id AS user_id, u.role, u.branch_id FROM tokens t
-                INNER JOIN users u ON t.user_id = u.id
-                WHERE t.token = '$token' AND t.updated_at > NOW() - INTERVAL 1 DAY";
+        // Verify token and get user info
+        $sql = "SELECT u.id AS user_id, u.role, u.branch_id 
+                FROM users u 
+                JOIN tokens t ON u.id = t.user_id 
+                WHERE t.token = '$token' 
+                AND t.updated_at > NOW() - INTERVAL 1 DAY";
+
         $result = mysqli_query($conn, $sql);
         $userData = mysqli_fetch_assoc($result);
 
         if ($userData) {
             $user_id = $userData['user_id'];
-            $role = $userData['role'];
-            $branch_id = $userData['branch_id'];
+            $user_role = $userData['role']; // 'customer' or 'staff'
+            $branch_id = $userData['branch_id']; // Staff's branch ID
 
-            // Fetch orders based on role
-            if ($role === 'user') {
-                $sql = "SELECT * FROM orders WHERE customer_id = '$user_id' ORDER BY order_date DESC";
-            } elseif ($role === 'staff') {
-                $sql = "SELECT * FROM orders WHERE branch_id = '$branch_id' ORDER BY order_date DESC";
+            // Query for orders based on role
+            if ($user_role == 'user') {
+                $sql = "SELECT 
+                            o.id AS order_id,
+                            u.user_name,
+                            GROUP_CONCAT(f.food_name SEPARATOR ', ') AS order_items,
+                            GROUP_CONCAT(f.price SEPARATOR ', ') AS food_prices,
+                            GROUP_CONCAT(f.description SEPARATOR ', ') AS food_descriptions,
+                            GROUP_CONCAT(CONCAT('$image_base', f.image) SEPARATOR ', ') AS food_images,
+                            o.order_status,
+                            p.method AS payment_method
+                        FROM orders o
+                        JOIN users u ON o.user_id = u.id
+                        JOIN order_details od ON o.id = od.order_id
+                        JOIN foods f ON od.food_id = f.id
+                        LEFT JOIN payments p ON od.id = p.order_detail_id
+                        WHERE o.user_id = '$user_id'
+                        GROUP BY o.id, u.user_name, o.order_status, p.method
+                        ORDER BY o.order_date DESC";
+            } elseif ($user_role == 'staff') {
+                $sql = "SELECT 
+                            o.id AS order_id,
+                            u.user_name,
+                            GROUP_CONCAT(f.food_name SEPARATOR ', ') AS order_items,
+                            GROUP_CONCAT(f.price SEPARATOR ', ') AS food_prices,
+                            GROUP_CONCAT(f.description SEPARATOR ', ') AS food_descriptions,
+                            GROUP_CONCAT(CONCAT('$image_base', f.image) SEPARATOR ', ') AS food_images,
+                            o.order_status,
+                            p.method AS payment_method
+                        FROM orders o
+                        JOIN users u ON o.user_id = u.id
+                        JOIN order_details od ON o.id = od.order_id
+                        JOIN foods f ON od.food_id = f.id
+                        LEFT JOIN payments p ON od.id = p.order_detail_id
+                        WHERE od.branch_id = '$branch_id'
+                        GROUP BY o.id, u.user_name, o.order_status, p.method
+                        ORDER BY o.order_date DESC";
             } else {
-                echo json_encode(["status" => "error", "message" => "Invalid role"]);
-                exit();
+                echo json_encode(["status" => "error", "message" => "Unauthorized role"]);
+                exit;
             }
 
             $result = mysqli_query($conn, $sql);
             $orders = mysqli_fetch_all($result, MYSQLI_ASSOC);
 
-            // Process orders data
-            $orderList = [];
-            foreach ($orders as $order) {
-                $orderList[] = [
-                    "order_id" => $order['id'],
-                    "order_date" => $order['order_date'],
-                    "total_price" => $order['total_price'],
-                    "status" => $order['status']
-                ];
-            }
+            if (!empty($orders)) {
+                // Process the order data to include food details in a structured format
+                $order_data = [];
+                foreach ($orders as $order) {
+                    // Convert food details (names, prices, descriptions, images) into an array
+                    $food_names = explode(', ', $order['order_items']);
+                    $food_prices = explode(', ', $order['food_prices']);
+                    $food_descriptions = explode(', ', $order['food_descriptions']);
+                    $food_images = explode(', ', $order['food_images']);
+                    
+                    $food_details = [];
+                    for ($i = 0; $i < count($food_names); $i++) {
+                        $food_details[] = [
+                            'food_name' => $food_names[$i],
+                            'price' => $food_prices[$i],
+                            'description' => $food_descriptions[$i],
+                            'image' => $food_images[$i]
+                        ];
+                    }
 
-            if (!empty($orderList)) {
-                echo json_encode([
-                    "status" => "success",
-                    "message" => "Order history retrieved successfully",
-                    "data" => $orderList
-                ]);
+                    $order['food_details'] = $food_details; // Add the food details to the order
+                    unset($order['order_items'], $order['food_prices'], $order['food_descriptions'], $order['food_images']); // Clean up unnecessary fields
+
+                    $order_data[] = $order;
+                }
+
+                echo json_encode(["status" => "success", "message" => "Orders retrieved successfully", "data" => $order_data]);
             } else {
                 echo json_encode(["status" => "error", "message" => "No orders found"]);
             }

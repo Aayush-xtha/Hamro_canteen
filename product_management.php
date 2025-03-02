@@ -17,14 +17,23 @@ if (!$categoryResult) {
     die("Error fetching categories: " . mysqli_error($conn));
 }
 
+// Filtering products by category
 $categoryFilter = "";
 if (isset($_GET['category_id']) && $_GET['category_id'] != '') {
     $category_id = intval($_GET['category_id']);
-    $categoryFilter = " WHERE category_id = $category_id";
+    $categoryFilter = " AND category_id = $category_id";
+}
+$sql = "SELECT * FROM branches WHERE id = '$branch_id'";
+$result = mysqli_query($conn, $sql);
+if($result->num_rows >0){
+    $row = $result->fetch_assoc();
+    $branchName = $row['branch_name'];
 }
 
-$productSql = "SELECT * FROM foods" . $categoryFilter;
+// Fetch products for the logged-in branch
+$productSql = "SELECT * FROM foods WHERE branch_id = '$branch_id'" . $categoryFilter;
 $productResult = mysqli_query($conn, $productSql);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -364,7 +373,7 @@ $productResult = mysqli_query($conn, $productSql);
             <?php if (!empty($row['logo'])): ?>
                 <img src="./uploads/<?php echo $row['logo']; ?>" alt="Branch Logo" class="branch-logo" onclick="openFullScreenLogo('./uploads/<?php echo $row['logo']; ?>')">
             <?php else: ?>
-                <span>canteen</span>
+                <span><?php echo $branchName ?></span>
             <?php endif; ?>
         </div>
             <ul>
@@ -458,6 +467,21 @@ $productResult = mysqli_query($conn, $productSql);
                         </div>
                     </div>
                 <?php endwhile; ?>
+                <?php while ($product = mysqli_fetch_assoc($productResult)): ?>
+                        <div class="product-card">
+                            <img src="./uploads/<?php echo $product['image']; ?>" alt="<?php echo $product['food_name']; ?>">
+                            <h3><?php echo $product['food_name']; ?></h3>
+                            <p><?php echo $product['description']; ?></p>
+                        </div>
+                        <div class="product-info">
+                            <p class="price">Price: $<?php echo number_format($product['price'], 2); ?> </p>
+
+                            <!-- Edit and Delete Buttons -->
+                            <div class="button-container">
+                                <button class="btn edit-btn" onclick="editProduct(<?php echo $product['id']; ?>)">Edit</button>
+                                <button class="btn delete-btn" onclick="deleteProduct(<?php echo $product['id']; ?>)">Delete</button>
+                            </div>
+                    <?php endwhile; ?>
             </div>
 
             <script>

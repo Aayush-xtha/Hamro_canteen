@@ -2,11 +2,7 @@
 require_once('../database/db_connection.php');
 require_once('../global.php');
 
-// Get token from authorization header
-$headers = getallheaders();
-$token = isset($headers['Authorization']) ? str_replace('Bearer ', '', $headers['Authorization']) : null;
-
-if ($token && isset($_POST['first_name']) && isset($_POST['last_name']) && isset($_POST['email']) 
+if (isset($_POST['first_name']) && isset($_POST['last_name']) && isset($_POST['email']) 
     && isset($_POST['phone_number']) && isset($_POST['gender']) && isset($_POST['branch_id'])) {
 
     $firstName = mysqli_real_escape_string($conn, $_POST['first_name']);
@@ -16,14 +12,10 @@ if ($token && isset($_POST['first_name']) && isset($_POST['last_name']) && isset
     $gender = mysqli_real_escape_string($conn, $_POST['gender']);
     $branch_id = mysqli_real_escape_string($conn, $_POST['branch_id']);
 
-    // Get user ID from token
-    $checkTokenSql = "SELECT user_id FROM tokens WHERE token = '$token'";
-    $tokenResult = mysqli_query($conn, $checkTokenSql);
+    // Get user ID (assuming it is passed as a parameter)
+    $userId = isset($_POST['user_id']) ? $_POST['user_id'] : null;
 
-    if ($tokenResult && mysqli_num_rows($tokenResult) > 0) {
-        $tokenData = mysqli_fetch_assoc($tokenResult);
-        $userId = $tokenData['user_id'];
-
+    if ($userId) {
         // Check if email is already used by another user
         $checkEmailSql = "SELECT * FROM users WHERE email = '$email' AND id != '$userId'";
         $emailResult = mysqli_query($conn, $checkEmailSql);
@@ -67,11 +59,10 @@ if ($token && isset($_POST['first_name']) && isset($_POST['last_name']) && isset
                 }
             }
 
-            // Get updated user data including token
+            // Get updated user data
             $getUserSql = "SELECT u.id, u.first_name, u.last_name, u.email, u.phone_number, 
-                                  u.gender, u.image, u.branch_id, b.branch_name, t.token 
+                                  u.gender, u.image, u.branch_id, b.branch_name
                            FROM users u 
-                           LEFT JOIN tokens t ON u.id = t.user_id 
                            LEFT JOIN branches b ON u.branch_id = b.id 
                            WHERE u.id = '$userId'";
 
@@ -93,7 +84,7 @@ if ($token && isset($_POST['first_name']) && isset($_POST['last_name']) && isset
             echo json_encode(["status" => "error", "message" => "Profile update failed!"]);
         }
     } else {
-        echo json_encode(["status" => "error", "message" => "Invalid token!"]);
+        echo json_encode(["status" => "error", "message" => "User ID is required!"]);
     }
 } else {
     echo json_encode(["status" => "error", "message" => "All fields are required!"]);

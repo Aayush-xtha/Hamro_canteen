@@ -66,7 +66,7 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
 </head>
 <body>
   <div class="login-container">
-    <h2>Welcome Back!</h2>
+    <h2>Kina aakoo</h2>
     <form action="index.php" method="POST" enctype="multipart/form-data">
       <div class="input-group">
         <label for="email">Email:</label>

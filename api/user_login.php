@@ -6,11 +6,11 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
     $email = $_POST['email'];
     $password = $_POST['password'];
 
-    // Check if the user exists and join with branches table to get branch_name
+    // Check if the user exists and ensure only customers and staff can log in
     $sql = "SELECT u.*, b.branch_name 
             FROM users u
             LEFT JOIN branches b ON u.branch_id = b.id
-            WHERE u.email = '$email'";
+            WHERE u.email = '$email' AND (u.role = 'user' OR u.role = 'staff')";
     $result = mysqli_query($conn, $sql);
     $userData = mysqli_fetch_assoc($result);
 
@@ -40,8 +40,8 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
                     "gender" => $userData['gender'],
                     "role" => $userData['role'],
                     "branch_id" => $userData['branch_id'],
-                    "branch_name" => $userData['branch_name'], // Include branch name
-                    "image" => $image_base . $userData['image'],
+                    "branch_name" => $userData['branch_name'],
+                    "image" => $userData['image'],
                     "token" => $token
                 ]
             ]);
@@ -49,7 +49,7 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
             echo json_encode(["status" => "error", "message" => "Invalid password"]);
         }
     } else {
-        echo json_encode(["status" => "error", "message" => "User not found"]);
+        echo json_encode(["status" => "error", "message" => "User not found or not authorized"]);
     }
 } else {
     echo json_encode(["status" => "error", "message" => "Fill in all required fields"]);

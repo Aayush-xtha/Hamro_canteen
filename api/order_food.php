@@ -1,139 +1,102 @@
 <?php
 require_once('../database/db_connection.php');
 require_once('../global.php');
+if (isset($_POST['user_id']) && isset($_POST['food_items']) && isset($_POST['branch_id']) && isset($_POST['payment_method'])) {
+    $userId = $_POST['user_id'];
+    $foodItems = json_decode($_POST['food_items'], true);
+    $branchId = $_POST['branch_id'];
+    $paymentMethod = $_POST['payment_method'];
+    $date = date("Y-m-d H:i:s");
 
-// Get the Authorization header
-$headers = apache_request_headers();
-$authorizationHeader = isset($headers['Authorization']) ? $headers['Authorization'] : '';
+    // Check if the user exists
+    $checkUserSql = "SELECT id FROM users WHERE id = '$userId'";
+    $checkUserResult = mysqli_query($conn, $checkUserSql);
+    if (mysqli_num_rows($checkUserResult) == 0) {
+        echo json_encode(["status" => "error", "message" => "User not found"]);
+        exit();
+    }
+    // Step 1: Calculate total amount (sum of sum_total)
+    $totalAmount = 0;
+    foreach ($foodItems as $item) {
+        $totalAmount += $item['rate'] * $item['quantity'];
+    }
 
-if ($authorizationHeader) {
-    if (preg_match('/Bearer\s(\S+)/', $authorizationHeader, $matches)) {
-        $token = $matches[1];
+    // Step 2: Insert order into the orders table
+    $orderStatus = ($paymentMethod == 'cash') ? 'pending' : 'confirmed';
+    $insertOrderSql = "INSERT INTO orders (user_id, total_amount, order_status) 
+                       VALUES ('$userId', '$totalAmount', '$orderStatus')";
+    $orderResult = mysqli_query($conn, $insertOrderSql);
 
-        // Verify token and get user info
-        $sql = "SELECT u.id AS user_id, u.role, u.branch_id 
-                FROM users u 
-                JOIN tokens t ON u.id = t.user_id 
-                WHERE t.token = '$token' 
-                AND t.updated_at > NOW() - INTERVAL 1 DAY";
+    if ($orderResult) {
+        $orderId = mysqli_insert_id($conn);
+        $orderDetails = [];
 
-        $result = mysqli_query($conn, $sql);
-        $userData = mysqli_fetch_assoc($result);
+        // Step 3: Insert order details and fetch food info
+        foreach ($foodItems as $item) {
+            $foodId = $item['food_id'];
+            $quantity = $item['quantity'];
+            $rate = $item['rate'];
+            $sumTotal = $rate * $quantity;
 
-        if ($userData) {
-            // Validate required fields
-            if (isset($_POST['user_id']) && isset($_POST['food_items']) && isset($_POST['branch_id']) && isset($_POST['payment_method'])) {
-                $userId = $_POST['user_id'];
-                $foodItems = json_decode($_POST['food_items'], true);
-                $branchId = $_POST['branch_id'];
-                $paymentMethod = $_POST['payment_method'];
-                $date = date("Y-m-d H:i:s");
+            // Insert order details
+            $insertOrderDetailSql = "INSERT INTO order_details (order_id, food_id, quantity, rate, sum_total, branch_id)
+                                     VALUES ('$orderId', '$foodId', '$quantity', '$rate', '$sumTotal', '$branchId')";
+            mysqli_query($conn, $insertOrderDetailSql);
+            $orderDetailId = mysqli_insert_id($conn); // Get the latest order detail ID
 
-                // Check if the user exists
-                $checkUserSql = "SELECT id FROM users WHERE id = '$userId'";
-                $checkUserResult = mysqli_query($conn, $checkUserSql);
-                if (mysqli_num_rows($checkUserResult) == 0) {
-                    echo json_encode(["status" => "error", "message" => "User not found"]);
-                    exit();
-                }
+            // Fetch food details
+            $foodSql = "SELECT food_name, price, image, description 
+                        FROM foods 
+                        WHERE id = '$foodId'";
+            $foodResult = mysqli_query($conn, $foodSql);
+            $foodData = mysqli_fetch_assoc($foodResult);
 
-                // Ensure user_id from token matches request user_id
-                if ($userData['user_id'] != $userId) {
-                    echo json_encode(["status" => "error", "message" => "User ID mismatch"]);
-                    exit();
-                }
+            // Append order details
+            $orderDetails[] = [
+                "food_name" => $foodData['food_name'],
+                "price" => $foodData['price'],
+                "image" => $image_base . $foodData['image'],
+                "description" => $foodData['description'],
+                "quantity" => $quantity,
+                "rate" => $rate,
+                "sum_total" => $sumTotal
+            ];
 
-                // Step 1: Calculate total amount (sum of sum_total)
-                $totalAmount = 0;
-                foreach ($foodItems as $item) {
-                    $totalAmount += $item['rate'] * $item['quantity'];
-                }
-
-                // Step 2: Insert order into the orders table
-                $orderStatus = ($paymentMethod == 'cash') ? 'pending' : 'confirmed';
-                $insertOrderSql = "INSERT INTO orders (user_id, total_amount, order_status) 
-                                   VALUES ('$userId', '$totalAmount', '$orderStatus')";
-                $orderResult = mysqli_query($conn, $insertOrderSql);
-
-                if ($orderResult) {
-                    $orderId = mysqli_insert_id($conn);
-                    $orderDetails = [];
-
-                    // Step 3: Insert order details and fetch food info
-                    foreach ($foodItems as $item) {
-                        $foodId = $item['food_id'];
-                        $quantity = $item['quantity'];
-                        $rate = $item['rate'];
-                        $sumTotal = $rate * $quantity;
-
-                        // Insert order details
-                        $insertOrderDetailSql = "INSERT INTO order_details (order_id, food_id, quantity, rate, sum_total, branch_id)
-                                                 VALUES ('$orderId', '$foodId', '$quantity', '$rate', '$sumTotal', '$branchId')";
-                        mysqli_query($conn, $insertOrderDetailSql);
-                        $orderDetailId = mysqli_insert_id($conn); // Get the latest order detail ID
-
-                        // Fetch food details
-                        $foodSql = "SELECT food_name, price, image, description 
-                                    FROM foods 
-                                    WHERE id = '$foodId'";
-                        $foodResult = mysqli_query($conn, $foodSql);
-                        $foodData = mysqli_fetch_assoc($foodResult);
-
-                        // Append order details
-                        $orderDetails[] = [
-                            "food_name" => $foodData['food_name'],
-                            "price" => $foodData['price'],
-                            "image" => $image_base . $foodData['image'],
-                            "description" => $foodData['description'],
-                            "quantity" => $quantity,
-                            "rate" => $rate,
-                            "sum_total" => $sumTotal
-                        ];
-
-                        // Step 4: Insert payment for each order detail if payment is not cash
-                        if ($paymentMethod != 'cash') {
-                            $insertPaymentSql = "INSERT INTO payments (order_detail_id, payment_date, amount, method)
-                                                 VALUES ('$orderDetailId', '$date', '$sumTotal', '$paymentMethod')";
-                            mysqli_query($conn, $insertPaymentSql);
-                        }
-                    }
-
-                    // Step 5: Update order status if payment is completed
-                    if ($paymentMethod != 'cash') {
-                        $updateOrderStatusSql = "UPDATE orders SET order_status = 'confirmed' WHERE id = '$orderId'";
-                        mysqli_query($conn, $updateOrderStatusSql);
-
-                        // Send notification
-                        $insertNotificationSql = "INSERT INTO notifications (message, user_id, branch_id)
-                                                  VALUES ('Your order has been confirmed!', '$userId', '$branchId')";
-                        mysqli_query($conn, $insertNotificationSql);
-                    }
-
-                    // Return response with order details including order_id, total_amount, and order_status
-                    echo json_encode([
-                        "status" => "success",
-                        "message" => "Order placed successfully",
-                        "order_details" => array_map(function($orderDetail) use ($orderId, $totalAmount, $orderStatus) {
-                            // Append order_id, total_amount, order_status to each order detail
-                            $orderDetail["order_id"] = $orderId;
-                            $orderDetail["total_amount"] = $totalAmount;
-                            $orderDetail["order_status"] = $orderStatus;
-                            return $orderDetail;
-                        }, $orderDetails)
-                    ]);
-                } else {
-                    echo json_encode(["status" => "error", "message" => "Failed to place order"]);
-                }
-            } else {
-                echo json_encode(["status" => "error", "message" => "Fill in all required fields"]);
+            // Step 4: Insert payment for each order detail if payment is not cash
+            if ($paymentMethod != 'cash') {
+                $insertPaymentSql = "INSERT INTO payments (order_detail_id, payment_date, amount, method)
+                                     VALUES ('$orderDetailId', '$date', '$sumTotal', '$paymentMethod')";
+                mysqli_query($conn, $insertPaymentSql);
             }
-        } else {
-            echo json_encode(["status" => "error", "message" => "Invalid or expired token"]);
         }
+
+        // Step 5: Update order status if payment is completed
+        if ($paymentMethod != 'cash') {
+            $updateOrderStatusSql = "UPDATE orders SET order_status = 'confirmed' WHERE id = '$orderId'";
+            mysqli_query($conn, $updateOrderStatusSql);
+
+            // Send notification
+            $insertNotificationSql = "INSERT INTO notifications (message, user_id, branch_id)
+                                      VALUES ('Your order has been confirmed!', '$userId', '$branchId')";
+            mysqli_query($conn, $insertNotificationSql);
+        }
+
+        // Return response with order details including order_id, total_amount, and order_status
+        echo json_encode([
+            "status" => "success",
+            "message" => "Order placed successfully",
+            "order_details" => array_map(function($orderDetail) use ($orderId, $totalAmount, $orderStatus) {
+                // Append order_id, total_amount, order_status to each order detail
+                $orderDetail["order_id"] = $orderId;
+                $orderDetail["total_amount"] = $totalAmount;
+                $orderDetail["order_status"] = $orderStatus;
+                return $orderDetail;
+            }, $orderDetails)
+        ]);
     } else {
-        echo json_encode(["status" => "error", "message" => "Bearer token missing or invalid"]);
+        echo json_encode(["status" => "error", "message" => "Failed to place order"]);
     }
 } else {
-    echo json_encode(["status" => "error", "message" => "Authorization header missing"]);
+    echo json_encode(["status" => "error", "message" => "Fill in all required fields"]);
 }
 ?>

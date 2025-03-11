@@ -29,6 +29,7 @@ if ($userData) {
                     GROUP_CONCAT(f.description SEPARATOR ', ') AS food_descriptions,
                     GROUP_CONCAT(CONCAT('$image_base', f.image) SEPARATOR ', ') AS food_images,
                     o.order_status,
+                    o.total_amount,
                     p.method AS payment_method
                 FROM orders o
                 JOIN users u ON o.user_id = u.id
@@ -47,6 +48,7 @@ if ($userData) {
                     GROUP_CONCAT(f.description SEPARATOR ', ') AS food_descriptions,
                     GROUP_CONCAT(CONCAT('$image_base', f.image) SEPARATOR ', ') AS food_images,
                     o.order_status,
+                    o.total_amount,
                     p.method AS payment_method
                 FROM orders o
                 JOIN users u ON o.user_id = u.id

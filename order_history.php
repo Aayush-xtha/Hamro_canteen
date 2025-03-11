@@ -206,7 +206,8 @@ $orderResult = mysqli_query($conn, $history_sql);
                 <li><a href="product_management.php">Food Management</a></li>
                 <li><a href="user.php">Users</a></li>
                 <li><a href="review_feedback.php">Ratings & Feedback</a></li>
-                <li><a href="#">Notifications</a></li>
+                <li><a href="report.php">Report</a></li>
+                
                 <li><a href="#">Payments</a></li>
                 <li><a href="order_history.php" class="active">Order History</a></li> <!-- Active page -->
             </ul>

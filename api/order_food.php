@@ -1,11 +1,12 @@
 <?php
 require_once('../database/db_connection.php');
 require_once('../global.php');
-if (isset($_POST['user_id']) && isset($_POST['food_items']) && isset($_POST['branch_id']) && isset($_POST['payment_method'])) {
+
+if (isset($_POST['user_id']) && isset($_POST['food_items']) && isset($_POST['branch_id']) && isset($_POST['method'])) {
     $userId = $_POST['user_id'];
     $foodItems = json_decode($_POST['food_items'], true);
     $branchId = $_POST['branch_id'];
-    $paymentMethod = $_POST['payment_method'];
+    $paymentMethod = $_POST['method'];
     $date = date("Y-m-d H:i:s");
 
     // Check if the user exists
@@ -15,7 +16,16 @@ if (isset($_POST['user_id']) && isset($_POST['food_items']) && isset($_POST['bra
         echo json_encode(["status" => "error", "message" => "User not found"]);
         exit();
     }
-    // Step 1: Calculate total amount (sum of sum_total)
+
+    // Validate branch existence
+    $checkBranchSql = "SELECT id FROM branches WHERE id = '$branchId'";
+    $checkBranchResult = mysqli_query($conn, $checkBranchSql);
+    if (mysqli_num_rows($checkBranchResult) == 0) {
+        echo json_encode(["status" => "error", "message" => "Invalid branch ID"]);
+        exit();
+    }
+
+    // Step 1: Calculate total amount
     $totalAmount = 0;
     foreach ($foodItems as $item) {
         $totalAmount += $item['rate'] * $item['quantity'];
@@ -23,31 +33,39 @@ if (isset($_POST['user_id']) && isset($_POST['food_items']) && isset($_POST['bra
 
     // Step 2: Insert order into the orders table
     $orderStatus = ($paymentMethod == 'cash') ? 'pending' : 'confirmed';
-    $insertOrderSql = "INSERT INTO orders (user_id, total_amount, order_status) 
-                       VALUES ('$userId', '$totalAmount', '$orderStatus')";
+    $insertOrderSql = "INSERT INTO orders (user_id, total_amount, order_status) VALUES ('$userId', '$totalAmount', '$orderStatus')";
     $orderResult = mysqli_query($conn, $insertOrderSql);
 
     if ($orderResult) {
         $orderId = mysqli_insert_id($conn);
         $orderDetails = [];
 
-        // Step 3: Insert order details and fetch food info
         foreach ($foodItems as $item) {
-            $foodId = $item['food_id'];
-            $quantity = $item['quantity'];
-            $rate = $item['rate'];
+            $foodId = intval($item['food_id']);
+            $quantity = intval($item['quantity']);
+            $rate = floatval($item['rate']);
             $sumTotal = $rate * $quantity;
+
+            // Validate that food exists
+            $checkFoodSql = "SELECT id FROM foods WHERE id = '$foodId'";
+            $checkFoodResult = mysqli_query($conn, $checkFoodSql);
+            if (mysqli_num_rows($checkFoodResult) == 0) {
+                echo json_encode(["status" => "error", "message" => "Food item with ID $foodId not found"]);
+                exit();
+            }
 
             // Insert order details
             $insertOrderDetailSql = "INSERT INTO order_details (order_id, food_id, quantity, rate, sum_total, branch_id)
                                      VALUES ('$orderId', '$foodId', '$quantity', '$rate', '$sumTotal', '$branchId')";
-            mysqli_query($conn, $insertOrderDetailSql);
-            $orderDetailId = mysqli_insert_id($conn); // Get the latest order detail ID
+            if (!mysqli_query($conn, $insertOrderDetailSql)) {
+                echo json_encode(["status" => "error", "message" => "Failed to insert order details: " . mysqli_error($conn)]);
+                exit();
+            }
+
+            $orderDetailId = mysqli_insert_id($conn);
 
             // Fetch food details
-            $foodSql = "SELECT food_name, price, image, description 
-                        FROM foods 
-                        WHERE id = '$foodId'";
+            $foodSql = "SELECT food_name, price, image, description FROM foods WHERE id = '$foodId'";
             $foodResult = mysqli_query($conn, $foodSql);
             $foodData = mysqli_fetch_assoc($foodResult);
 
@@ -62,7 +80,7 @@ if (isset($_POST['user_id']) && isset($_POST['food_items']) && isset($_POST['bra
                 "sum_total" => $sumTotal
             ];
 
-            // Step 4: Insert payment for each order detail if payment is not cash
+            // Step 4: Insert payment if method is not cash
             if ($paymentMethod != 'cash') {
                 $insertPaymentSql = "INSERT INTO payments (order_detail_id, payment_date, amount, method)
                                      VALUES ('$orderDetailId', '$date', '$sumTotal', '$paymentMethod')";
@@ -81,12 +99,11 @@ if (isset($_POST['user_id']) && isset($_POST['food_items']) && isset($_POST['bra
             mysqli_query($conn, $insertNotificationSql);
         }
 
-        // Return response with order details including order_id, total_amount, and order_status
+        // Return response with order details
         echo json_encode([
             "status" => "success",
             "message" => "Order placed successfully",
             "order_details" => array_map(function($orderDetail) use ($orderId, $totalAmount, $orderStatus) {
-                // Append order_id, total_amount, order_status to each order detail
                 $orderDetail["order_id"] = $orderId;
                 $orderDetail["total_amount"] = $totalAmount;
                 $orderDetail["order_status"] = $orderStatus;
@@ -94,7 +111,7 @@ if (isset($_POST['user_id']) && isset($_POST['food_items']) && isset($_POST['bra
             }, $orderDetails)
         ]);
     } else {
-        echo json_encode(["status" => "error", "message" => "Failed to place order"]);
+        echo json_encode(["status" => "error", "message" => "Failed to place order: " . mysqli_error($conn)]);
     }
 } else {
     echo json_encode(["status" => "error", "message" => "Fill in all required fields"]);

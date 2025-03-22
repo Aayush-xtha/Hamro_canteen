@@ -9,30 +9,37 @@ if (!isset($_SESSION['id'])) {
 }
 
 $branch_id = $_SESSION['id'];
+// echo("branch Id $branch_id");
 
 $sql = "SELECT * FROM branches WHERE id = '$branch_id'";
 $result = mysqli_query($conn, $sql);
-if($result->num_rows >0){
-    $row = $result->fetch_assoc();
+if ($result && mysqli_num_rows($result) > 0) { 
+    $row = mysqli_fetch_assoc($result);
     $branchName = $row['branch_name'];
 }
+
 
 $history_sql = "SELECT 
             o.id AS order_id, 
             u.user_name, 
+            u.first_name,
+            u.last_name,
+            od.quantity,
+            od.sum_total,
             GROUP_CONCAT(f.food_name SEPARATOR ', ') AS order_items,
             o.order_status,
-            p.method AS payment_method
+            COALESCE(p.method, 'Not Paid') AS payment_method
         FROM orders o
         JOIN users u ON o.user_id = u.id
         JOIN order_details od ON o.id = od.order_id
         JOIN foods f ON od.food_id = f.id
         LEFT JOIN payments p ON od.id = p.order_detail_id
         WHERE od.branch_id = '$branch_id'
-        GROUP BY o.id, u.user_name, o.order_status, p.method
+        GROUP BY o.id, u.user_name, o.order_status
         ORDER BY o.order_date DESC";
 
 $orderResult = mysqli_query($conn, $history_sql);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -229,21 +236,28 @@ $orderResult = mysqli_query($conn, $history_sql);
                     <thead>
                         <tr>
                             <th>Order ID</th>
-                            <th>Username</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
                             <th>Order Items</th>
+                            <th>Quantity</th>
                             <th>Order Status</th>
                             <th>Payment Method</th>
+                            <th>Total Amount</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if ($result->num_rows > 0): ?>
-                            <?php while ($row = $result->fetch_assoc()): ?>
+                        <?php if ($orderResult->num_rows > 0): ?>
+                            <?php while ($row = $orderResult->fetch_assoc()): ?>
+
                                 <tr>
                                     <td><?php echo $row['order_id']; ?></td>
-                                    <td><?php echo $row['user_name']; ?></td>
+                                    <td><?php echo $row['first_name']; ?></td>
+                                    <td><?php echo $row['last_name']; ?></td>
                                     <td><?php echo $row['order_items']; ?></td>
+                                    <td><?php echo $row['quantity']; ?></td>
                                     <td><?php echo $row['order_status']; ?></td>
                                     <td><?php echo $row['payment_method'] ? $row['payment_method'] : 'N/A'; ?></td>
+                                    <td><?php echo "Rs. " . number_format($row['sum_total'], 2); ?></td>
                                 </tr>
                             <?php endwhile; ?>
                         <?php else: ?>

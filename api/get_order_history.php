@@ -2,101 +2,141 @@
 require_once('../database/db_connection.php');
 require_once('../global.php');
 
-// Check if required fields are set
-if (!isset($_GET['user_id'])) {
-    echo json_encode(["status" => "error", "message" => "User ID is required"]);
-    exit;
-}
+if (isset($_GET['user_id'])) {
+    $user_id = $_GET['user_id'];
 
-$user_id = $_GET['user_id'];
+    // Fetch user details
+    $userQuery = "SELECT id, first_name, last_name, email, phone_number, gender, role, image FROM users WHERE id = '$user_id'";
+    $userResult = mysqli_query($conn, $userQuery);
+    $userData = mysqli_fetch_assoc($userResult);
 
-// Get user role and branch
-$sql = "SELECT id AS user_id, role, branch_id FROM users WHERE id = '$user_id'";
-$result = mysqli_query($conn, $sql);
-$userData = mysqli_fetch_assoc($result);
-
-if ($userData) {
-    $user_role = $userData['role']; // 'customer' or 'staff'
-    $branch_id = $userData['branch_id']; // Staff's branch ID
-
-    // Query for orders based on role
-    if ($user_role == 'user') {
-        $sql = "SELECT 
-                    o.id AS order_id,
-                    u.user_name,
-                    GROUP_CONCAT(f.food_name SEPARATOR ', ') AS order_items,
-                    GROUP_CONCAT(f.price SEPARATOR ', ') AS food_prices,
-                    GROUP_CONCAT(f.description SEPARATOR ', ') AS food_descriptions,
-                    GROUP_CONCAT(CONCAT('$image_base', f.image) SEPARATOR ', ') AS food_images,
-                    o.order_status,
-                    o.total_amount,
-                    p.method AS payment_method
-                FROM orders o
-                JOIN users u ON o.user_id = u.id
-                JOIN order_details od ON o.id = od.order_id
-                JOIN foods f ON od.food_id = f.id
-                LEFT JOIN payments p ON od.id = p.order_detail_id
-                WHERE o.user_id = '$user_id'
-                GROUP BY o.id, u.user_name, o.order_status, p.method
-                ORDER BY o.order_date DESC";
-    } elseif ($user_role == 'staff') {
-        $sql = "SELECT 
-                    o.id AS order_id,
-                    u.user_name,
-                    GROUP_CONCAT(f.food_name SEPARATOR ', ') AS order_items,
-                    GROUP_CONCAT(f.price SEPARATOR ', ') AS food_prices,
-                    GROUP_CONCAT(f.description SEPARATOR ', ') AS food_descriptions,
-                    GROUP_CONCAT(CONCAT('$image_base', f.image) SEPARATOR ', ') AS food_images,
-                    o.order_status,
-                    o.total_amount,
-                    p.method AS payment_method
-                FROM orders o
-                JOIN users u ON o.user_id = u.id
-                JOIN order_details od ON o.id = od.order_id
-                JOIN foods f ON od.food_id = f.id
-                LEFT JOIN payments p ON od.id = p.order_detail_id
-                WHERE od.branch_id = '$branch_id'
-                GROUP BY o.id, u.user_name, o.order_status, p.method
-                ORDER BY o.order_date DESC";
-    } else {
-        echo json_encode(["status" => "error", "message" => "Unauthorized role"]);
+    if (!$userData) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'User not found.'
+        ]);
         exit;
     }
 
-    $result = mysqli_query($conn, $sql);
-    $orders = mysqli_fetch_all($result, MYSQLI_ASSOC);
+    $user_type = $userData['role'];
 
-    if (!empty($orders)) {
-        // Process the order data to include food details in a structured format
-        $order_data = [];
-        foreach ($orders as $order) {
-            // Convert food details (names, prices, descriptions, images) into an array
-            $food_names = explode(', ', $order['order_items']);
-            $food_prices = explode(', ', $order['food_prices']);
-            $food_descriptions = explode(', ', $order['food_descriptions']);
-            $food_images = explode(', ', $order['food_images']);
-            
-            $food_details = [];
-            for ($i = 0; $i < count($food_names); $i++) {
-                $food_details[] = [
-                    'food_name' => $food_names[$i],
-                    'price' => $food_prices[$i],
-                    'description' => $food_descriptions[$i],
-                    'image' => $food_images[$i]
+    if($user_type === 'staff'){
+        $orderQuery = "
+        SELECT 
+                o.id AS order_id,
+                o.total_amount,
+                o.order_status,
+                o.order_date,
+                u.id AS user_id,
+                CONCAT(u.first_name, ' ', u.last_name) AS user_name,
+                u.email AS user_email,
+                u.phone_number,
+                u.gender,
+                u.image AS user_image,
+                od.food_id,
+                f.food_name,
+                f.price AS food_price,
+                f.image AS food_image,
+                od.quantity,
+                od.rate,
+                od.sum_total,
+                p.method AS payment_method,
+                p.amount AS payment_amount,
+                p.payment_date
+            FROM orders o
+            LEFT JOIN users u ON o.user_id = u.id
+            LEFT JOIN order_details od ON o.id = od.order_id
+            LEFT JOIN foods f ON od.food_id = f.id
+            LEFT JOIN payments p ON od.id = p.order_detail_id";
+    }else{
+        $orderQuery = "
+        SELECT 
+            o.id AS order_id,
+            o.total_amount,
+            o.order_status,
+            o.order_date,
+            u.id AS user_id,
+            CONCAT(u.first_name, ' ', u.last_name) AS user_name,
+            u.email AS user_email,
+            u.phone_number,
+            u.gender,
+            u.image AS user_image,
+            od.food_id,
+            f.food_name,
+            f.price AS food_price,
+            f.image AS food_image,
+            od.quantity,
+            od.rate,
+            od.sum_total,
+            p.method AS payment_method,
+            p.amount AS payment_amount,
+            p.payment_date
+        FROM orders o
+        LEFT JOIN users u ON o.user_id = u.id
+        LEFT JOIN order_details od ON o.id = od.order_id
+        LEFT JOIN foods f ON od.food_id = f.id
+        LEFT JOIN payments p ON od.id = p.order_detail_id
+        WHERE o.user_id = '$user_id'";
+    }
+
+    $orderResult = mysqli_query($conn, $orderQuery);
+
+    if ($orderResult && mysqli_num_rows($orderResult) > 0) {
+        $orders = [];
+
+        while ($row = mysqli_fetch_assoc($orderResult)) {
+            $order_id = $row['order_id'];
+
+            if (!isset($orders[$order_id])) {
+                $orders[$order_id] = [
+                    'order_id' => $row['order_id'],
+                    'total_amount' => $row['total_amount'],
+                    'order_status' => $row['order_status'],
+                    'order_date' => $row['order_date'],
+                    'user_details' => [
+                        'user_id' => $row['user_id'],
+                        'name' => $row['user_name'],
+                        'email' => $row['user_email'],
+                        'phone_number' => $row['phone_number'],
+                        'gender' => $row['gender'],
+                        'image' => !empty($row['user_image']) ? $image_base . $row['user_image'] : null
+                    ],
+                    'items' => [],
+                    'payment' => [
+                        'method' => $row['payment_method'],
+                        'amount' => $row['payment_amount'],
+                        'payment_date' => $row['payment_date']
+                    ]
                 ];
             }
 
-            $order['food_details'] = $food_details; // Add the food details to the order
-            unset($order['order_items'], $order['food_prices'], $order['food_descriptions'], $order['food_images']); // Clean up unnecessary fields
-
-            $order_data[] = $order;
+            if (!empty($row['food_id'])) {
+                $orders[$order_id]['items'][] = [
+                    'food_id' => $row['food_id'],
+                    'food_name' => $row['food_name'],
+                    'food_image' => $image_base . $row['food_image'],
+                    'quantity' => $row['quantity'],
+                    'rate' => $row['rate'],
+                    'sum_total' => $row['sum_total']
+                ];
+            }
         }
 
-        echo json_encode(["status" => "success", "message" => "Orders retrieved successfully", "data" => $order_data]);
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Order details retrieved successfully!',
+            'data' => array_values($orders),
+        ]);
     } else {
-        echo json_encode(["status" => "error", "message" => "No orders found"]);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'No orders found for this user.',
+        ]);
     }
 } else {
-    echo json_encode(["status" => "error", "message" => "Invalid user ID"]);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'User ID is required.'
+    ]);
 }
 ?>

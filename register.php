@@ -68,90 +68,286 @@ if (isset($_POST['branch_name']) && isset($_POST['address']) && isset($_POST['em
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html>
 <head>
     <title>Register</title>
     <style>
+        /* Root Variables */
+        :root {
+            --white: #ffffff;
+            --moss-dark: #2a5848;
+            --moss-light: #3c7a66;
+            --mint: #97c1a9;
+            --mint-light: #b8d8c0;
+            --light-gray: #f7f9f8;
+            --gray-border: #e0e6e3;
+            --dark-gray: #333;
+            --accent-red: #e74c3c;
+            --accent-green: #2ecc71;
+        }
+
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            background-color: var(--light-gray);
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--moss-light) 0%, var(--mint-light) 100%);
         }
 
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 400px; 
+        /* Main Container Card */
+        .main-container {
+            background-color: var(--white);
+            border-radius: 15px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 900px;
+            border: 1px solid var(--gray-border);
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Logo Card */
+        .logo-card {
+            background-color: var(--moss-dark);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 40%;
+            color: var(--white);
             text-align: center;
         }
 
-        input, select {
-            width: 90%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+        .logo-card img {
+            max-width: 150px;
+            height: auto;
+            margin-bottom: 20px;
         }
 
-        button {
-            width: 95%; 
+        .logo-card h1 {
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+
+        .logo-card p {
+            font-size: 16px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        /* Registration Card */
+        .register-card {
+            padding: 40px;
+            width: 60%;
+            overflow-y: auto;
+            max-height: 650px;
+        }
+
+        /* Heading */
+        h2 {
+            color: var(--moss-dark);
+            margin-bottom: 25px;
+            text-align: center;
+            position: relative;
+            padding-bottom: 15px;
+            font-size: 28px;
+        }
+
+        h2:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background-color: var(--mint);
+            border-radius: 3px;
+        }
+
+        /* Form Styling */
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Input Fields */
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--gray-border);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            background-color: var(--light-gray);
+        }
+
+        input[type="file"] {
+            width: 100%;
             padding: 10px;
-            margin-top: 20px;
-            margin-bottom: 30px;
-            background-color: #28a745;
-            color: white;
+            border: 1px dashed var(--gray-border);
+            border-radius: 8px;
+            background-color: var(--light-gray);
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--moss-dark);
+            box-shadow: 0 0 0 3px rgba(151, 193, 169, 0.2);
+            background-color: var(--white);
+        }
+
+        /* Button */
+        button {
+            background-color: var(--moss-dark);
+            color: var(--white);
             border: none;
-            border-radius: 4px;
+            padding: 14px 20px;
+            border-radius: 8px;
             cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+            margin-top: 10px;
+            font-size: 16px;
         }
 
         button:hover {
-            background-color: #218838;
+            background-color: var(--mint);
+            color: var(--moss-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
+
+        /* Login Link */
         .login-btn {
-            display: inline-block;
-            margin-top: 10px;
-            padding: 10px 20px;
-            color: #218838;
+            color: var(--moss-light);
             text-decoration: none;
-            border-radius: 4px;
-            font-size: 16px;
             text-align: center;
-            transition: background 0.3s ease;
+            display: block;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+            font-size: 15px;
         }
 
         .login-btn:hover {
-            color: grey;
+            color: var(--moss-dark);
+            text-decoration: underline;
         }
 
+        /* Logo Preview */
+        .logo-preview {
+            margin-top: 10px;
+            text-align: center;
+        }
 
+        .logo-preview img {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 50%;
+            border: 3px solid var(--mint);
+            padding: 3px;
+        }
+
+        /* Responsive Design */
+        @media screen and (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                max-width: 500px;
+            }
+            
+            .logo-card, .register-card {
+                width: 100%;
+                padding: 30px 20px;
+            }
+            
+            .logo-card {
+                padding-bottom: 40px;
+            }
+            
+            .register-card {
+                max-height: none;
+                overflow-y: visible;
+            }
+            
+            h2 {
+                font-size: 24px;
+            }
+            
+            input, button {
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Register</h2>
-        <form action="register.php" method="POST" enctype="multipart/form-data">
-
-            
-            <input type="text" name="branch_name" placeholder="Branch Name" required>
-            <input type="text" name="address" placeholder="Address" required>
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="tel" name="phone_number" placeholder="Phone Number" required>
-           
-            <input type="password" name="password" placeholder="Password" required>
-            <input type="password" name="confirm_password" placeholder="Confirm Password" required>
-            <input type="file" name="logo" required>
-            <button type="submit">Register</button><br>
-            <a href="index.php" class="login-btn">Already have an account? Login</a><br>
-        </form>
+    <div class="main-container">
+        <!-- Logo Card -->
+        <div class="logo-card">
+            <img src="./uploads/logo.png" alt="Kina aakoo Logo" onerror="this.src='https://via.placeholder.com/150x150?text=Kina+aakoo';this.onerror='';">
+            <h1>Hamro Canteen</h1>
+            <p>Join our canteen management platform to streamline your operations and enhance customer experience.</p>
+            <p style="margin-top: 20px;">Create your account to get started!</p>
+        </div>
+        
+        <!-- Registration Card -->
+        <div class="register-card">
+            <h2>Register</h2>
+            <form action="register.php" method="POST" enctype="multipart/form-data">
+                <input type="text" name="branch_name" placeholder="Branch Name" required>
+                <input type="text" name="address" placeholder="Address" required>
+                <input type="email" name="email" placeholder="Email" required>
+                <input type="tel" name="phone_number" placeholder="Phone Number" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <input type="password" name="confirm_password" placeholder="Confirm Password" required>
+                
+                <div>
+                    <label for="logo" style="display: block; margin-bottom: 8px; color: var(--moss-dark); font-weight: 600;">Branch Logo:</label>
+                    <input type="file" id="logo" name="logo" accept="image/*" required>
+                </div>
+                
+                <div id="logo-preview-container" class="logo-preview" style="display: none;"></div>
+                
+                <button type="submit">Register</button>
+                <a href="index.php" class="login-btn">Already have an account? Login</a>
+            </form>
+        </div>
     </div>
+    
+    <!-- Script for logo preview -->
+    <script>
+        document.getElementById('logo').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                const previewContainer = document.getElementById('logo-preview-container');
+                
+                reader.onload = function(event) {
+                    previewContainer.innerHTML = `<img src="${event.target.result}" alt="Logo Preview">`;
+                    previewContainer.style.display = 'block';
+                }
+                
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
 </body>
 </html>

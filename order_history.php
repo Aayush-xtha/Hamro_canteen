@@ -47,153 +47,266 @@ $orderResult = mysqli_query($conn, $history_sql);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order History</title>
+    <link rel="stylesheet" href="side_bar.css">
+
     <style>
-        :root {
-            --mint: #A8D5BA;
-            --sage: #C1DAB4;
-            --moss: #6D8B74;
-            --white: #FFFFFF;
-            --gray: #F5F5F5;
-            --dark-gray: #3A3A3A;
-            --hover-color: #B4E4CA;
-            --active-color: #B0D8C0;
+      :root {
+            --white: #ffffff;
+            --moss-dark: #2a5848;
+            --moss-light: #3c7a66;
+            --mint: #97c1a9;
+            --mint-light: #b8d8c0;
+            --light-gray: #f7f9f8;
+            --gray-border: #e0e6e3;
+            --dark-gray: #333;
+            --accent-red: #e74c3c;
+            --accent-green: #2ecc71;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: var(--gray);
-            color: var(--dark-gray);
+            background-color: var(--light-gray);
         }
 
         .dashboard {
             display: flex;
-            height: 100vh;
-            width: 100%;
+            min-height: 100vh;
         }
 
+        /* Sidebar Styling */
         .sidebar {
-            width: 250px;
-            background-color: var(--moss);
+            width: 280px;
+            background: linear-gradient(to bottom, var(--moss-dark), var(--moss-light));
             color: var(--white);
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
+            padding: 30px 0;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.1);
             position: fixed;
-            height: 100%;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
         }
 
         .sidebar .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 30px;
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .sidebar .logo img {
+            width: 180px;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 5px solid var(--mint);
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        .sidebar .logo img:hover {
+            transform: scale(1.05);
+        }
+
+        .sidebar .logo span {
+            display: block;
+            color: var(--white);
+            font-size: 1.5em;
+            margin-top: 10px;
         }
 
         .sidebar ul {
             list-style: none;
-            padding: 0;
         }
 
         .sidebar ul li {
             margin: 15px 0;
+            position: relative;
         }
 
         .sidebar ul li a {
+            color: var(--white); 
             text-decoration: none;
-            color: var(--white);
-            font-size: 1rem;
-            padding: 10px;
-            border-radius: 5px;
+            padding: 12px 25px;
             display: block;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .sidebar ul li a::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: var(--mint);
+            display: block;
+            top: 0;
+            left: -100%;
+            transition: all 0.3s ease;
+            z-index: -1;
+        }
+
+        .sidebar ul li a:hover::before,
+        .sidebar ul li a.active::before {
+            left: 0;
         }
 
         .sidebar ul li a:hover,
         .sidebar ul li a.active {
-            background-color: var(--active-color);
+            color: var(--moss-dark);
             font-weight: bold;
-            color: var(--dark-gray);
         }
 
+        /* Container Styling */
         .container {
-            padding: 20px;
-            margin-left: 270px; /* Adjust for sidebar space */
-            width: calc(100% - 270px);
+            margin-left: 280px;
+            width: calc(100% - 280px);
+            padding: 30px;
+            background-color: var(--light-gray);
+            min-height: 100vh;
         }
 
-        h1 {
-            color: var(--moss);
-        }
-
-        .form-section {
+        /* Header Styling */
+        .header {
+            background-color: var(--white);
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: flex-start;
-            margin-bottom: 20px;
+            padding: 20px 30px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
         }
 
-        .form-section input {
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid var(--light-gray);
-            margin-right: 10px;
-            font-size: 1rem;
+        .header input {
+            padding: 10px 15px;
+            border: 1px solid var(--gray-border);
+            border-radius: 8px;
             width: 250px;
+            transition: all 0.3s ease;
         }
 
-        .form-section button {
-            padding: 10px 20px;
-            background-color: var(--mint);
+        .header input:focus {
+            outline: none;
+            border-color: var(--moss-dark);
+            box-shadow: 0 0 0 3px rgba(151,193,169,0.2);
+        }
+
+        .btn {
+            background-color: var(--moss-dark);
             color: var(--white);
-            font-weight: bold;
-            cursor: pointer;
             border: none;
-            border-radius: 5px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .form-section button:hover {
-            background-color: var(--hover-color);
+        .btn:hover {
+            background-color: var(--mint);
+            color: var(--moss-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Content Styling */
+        h1 {
+            color: var(--moss-dark);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--mint);
+            padding-bottom: 10px;
+        }
+
+        /* List Section Styling */
+        .list-section {
+            background-color: var(--white);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid var(--gray-border);
         }
 
         .list-section table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
         }
 
-        .list-section table th,
+        .list-section table thead {
+            background-color: var(--light-gray);
+        }
+
+        .list-section table th, 
         .list-section table td {
             padding: 15px;
-            border: 1px solid var(--light-gray);
             text-align: left;
+            border-bottom: 1px solid var(--gray-border);
         }
 
         .list-section table th {
-            background-color: var(--mint);
+            background-color: var(--moss-dark);
             color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .list-section table tbody tr:hover {
-            background-color: var(--hover-color);
-        }
-        .branch-logo {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            display: block;
-            margin: 0 auto 0px auto;
-            border: 3px solid white;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer;
+            background-color: var(--mint-light);
+            transition: background-color 0.3s ease;
         }
 
-        /* Hover Effect - Slight Scale & Glow */
-        .branch-logo:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        /* Responsive Design */
+        @media screen and (max-width: 1200px) {
+            .sidebar {
+                width: 250px;
+            }
+
+            .container {
+                margin-left: 250px;
+                width: calc(100% - 250px);
+            }
         }
 
+        @media screen and (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+            }
+
+            .container {
+                margin-left: 0;
+                width: 100%;
+                padding: 15px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header input {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .list-section table {
+                font-size: 0.9em;
+            }
+
+            .list-section table th, 
+            .list-section table td {
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -211,11 +324,13 @@ $orderResult = mysqli_query($conn, $history_sql);
                 <li><a href="dashboard.php">Dashboard</a></li>
                 <li><a href="category.php">Category Management</a></li>
                 <li><a href="product_management.php">Food Management</a></li>
-                <li><a href="user.php">Users</a></li>
+                <li><a href="staff.php">Staff</a></li>
+
                 <li><a href="review_feedback.php">Ratings & Feedback</a></li>
                 <li><a href="report.php">Report</a></li>
                 
-                <li><a href="#">Payments</a></li>
+                <li><a href="profile.php">Profile</a></li>
+
                 <li><a href="order_history.php" class="active">Order History</a></li> <!-- Active page -->
             </ul>
         </div>
@@ -223,13 +338,10 @@ $orderResult = mysqli_query($conn, $history_sql);
         <div class="container">
             <h1>Order History</h1>
 
-            <!-- Search Section -->
-            <div class="form-section">
-                <input type="text" placeholder="Search Order ID or Username..." id="searchInput">
-                <button>Search</button>
-            </div>
+            
+            
 
-            <!-- Display Section -->
+            
             <div class="list-section">
                 <h2>Order List</h2>
                 <table>

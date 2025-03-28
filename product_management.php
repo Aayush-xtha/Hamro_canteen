@@ -45,54 +45,61 @@ $productResult = mysqli_query($conn, $productSql);
 <body>
     <style>
 
-        :root {
-            --mint: #A8D5BA;
-            --sage: #C1DAB4;
-            --moss: #6D8B74;
-            --white: #FFFFFF;
-            --gray: #F5F5F5;
-            --dark-gray: #3A3A3A;
-            --red: #FF6B6B;
-            --blue: #6B9BFF;
-            --shadow: rgba(0, 0, 0, 0.1);
-            --border-radius: 10px;
-            --transition: 0.3s ease;
+:root {
+            --white: #ffffff;
+            --moss-dark: #2a5848;
+            --moss-light: #3c7a66;
+            --mint: #97c1a9;
+            --mint-light: #b8d8c0;
+            --light-gray: #f7f9f8;
+            --gray-border: #e0e6e3;
+            --dark-gray: #333;
+            --accent-red: #e74c3c;
+            --accent-green: #2ecc71;
         }
 
-        body {
+        * {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: var(--gray);
-            color: var(--dark-gray);
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         .dashboard {
             display: flex;
-            height: 100vh;
+            min-height: 100vh;
+            background-color: var(--light-gray);
         }
 
+        /* Sidebar Styling */
         .sidebar {
-            width: 250px;
-            background-color: var(--moss);
+            width: 280px;
+            background: linear-gradient(to bottom, var(--moss-dark), var(--moss-light));
             color: var(--white);
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            position: fixed;
-            height: 100%;
-            box-shadow: 2px 0 5px var(--shadow);
+            padding: 30px 0;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.1);
         }
 
         .sidebar .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 30px;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .sidebar .logo img {
+            width: 180px;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 5px solid var(--mint);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar .logo img:hover {
+            transform: scale(1.05);
         }
 
         .sidebar ul {
             list-style: none;
-            padding: 0;
-            margin: 0;
         }
 
         .sidebar ul li {
@@ -100,270 +107,258 @@ $productResult = mysqli_query($conn, $productSql);
         }
 
         .sidebar ul li a {
-            text-decoration: none;
             color: var(--white);
-            font-size: 1rem;
-            padding: 10px;
-            border-radius: var(--border-radius);
+            text-decoration: none;
+            padding: 12px 25px;
             display: block;
-            transition: background-color var(--transition);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .sidebar ul li a::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: var(--mint);
+            display: block;
+            top: 0;
+            left: -100%;
+            transition: all 0.3s ease;
+            z-index: -1;
+        }
+
+        .sidebar ul li a:hover::before,
+        .sidebar ul li a.active::before {
+            left: 0;
         }
 
         .sidebar ul li a:hover,
         .sidebar ul li a.active {
-            background-color: var(--mint);
+            color: var(--moss-dark);
             font-weight: bold;
-            color: var(--dark-gray);
         }
-
+                
+        /* Main Content */
         .main-content {
-            margin-left: 270px;
-            padding: 40px;
-            flex: 1;
+            flex-grow: 1;
+            padding: 30px;
+            background-color: var(--light-gray);
         }
 
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: right;
+            align-items: center;
             margin-bottom: 30px;
+            background-color: var(--white);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .header h1 {
-            margin: 0 ;
-            font-size: 2rem;
-            text-align: center;
+            color: var(--moss-dark);
+            font-size: 2em;
+            font-weight: 600;
         }
 
         .search-bar {
             display: flex;
-            gap: 10px;
+            background-color: var(--white);
+            border-radius: 25px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
         }
-
 
         .search-bar input {
-            padding: 10px;
-            border: 1px solid var(--moss);
-            border-radius: var(--border-radius);
-            width: 250px;
-        }
-
-        .search-bar input:focus {
+            border: none;
+            padding: 12px 15px;
+            width: 220px;
             outline: none;
-            border-color: var(--mint);
         }
 
-        .content {
-            margin-top: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        .search-bar .btn {
+            background-color: var(--moss-dark);
+            color: var(--white);
+            border: none;
+            padding: 12px 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        .add-product {
+        .search-bar .btn:hover {
+            background-color: var(--mint);
+            color: var(--moss-dark);
+        }
+
+        /* Forms & Inputs */
+        .add-product, .category-filter {
             background-color: var(--white);
-            padding: 30px;
-            border-radius: var(--border-radius);
-            box-shadow: 0 4px 8px var(--shadow);
-            max-width: 500px;
-            width: 100%;
-            margin-bottom: 30px;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--gray-border);
+            width: 80%;
+            margin: 0 auto;
         }
 
         .add-product h2 {
+            color: var(--moss-dark);
+            font-size: 1.6em;
             margin-bottom: 15px;
-            font-size: 1.5rem;
-            text-align: center;
         }
 
         .add-product form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .add-product label {
+            font-weight: 600;
+        }
+
+        .add-product input, 
+        .add-product select, 
+        .add-product textarea {
             width: 100%;
-        }
-
-        .add-product form label {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .add-product form input,
-        .add-product form textarea,
-        .add-product form select {
             padding: 10px;
-            border: 1px solid var(--moss);
-            border-radius: var(--border-radius);
-            font-size: 1rem;
-            width: 100%;
-            box-sizing: border-box;
+            border: 2px solid var(--mint-light);
+            border-radius: 6px;
+            transition: all 0.3s ease;
         }
 
-        .add-product form textarea {
-            resize: none;
-            height: 80px;
+        .add-product input:focus, 
+        .add-product select:focus, 
+        .add-product textarea:focus {
+            border-color: var(--moss-dark);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(151, 193, 169, 0.2);
         }
 
-        .add-product form button {
-            padding: 12px;
-            border: none;
-            border-radius: var(--border-radius);
-            background-color: var(--moss);
+        /* Buttons */
+        .btn {
+            background-color: var(--moss-dark);
             color: var(--white);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 1rem;
-            text-align: center;
-            transition: background-color var(--transition);
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
         }
 
-        .add-product form button:hover {
+        .btn:hover {
             background-color: var(--mint);
-            color: var(--dark-gray);
-        }
-        
-
-        .category-filter {
-            margin-top: 30px; /* Adds space above the category filter */
-            margin-bottom: 30px;
-            text-align: left;
+            color: var(--moss-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
         }
 
-        .category-filter form select {
-            width: 200px; /* Set the select dropdown width */
-            padding: 10px 15px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
-            display: inline-block; 
-            position: relative;
-        }
-
-        .category-filter form select:focus {
-            border-color: #007bff; /
-            outline: none; 
-        }
-
-        .category-filter form select option {
-            padding: 10px;
-        }
+        /* Product Grid */
         .product-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            width: 95%; /* Adjust to take full space */
-            /* max-width: 1200px; Set a max width for grid */
-            margin: 0 auto; /* Center the grid on the page */
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 25px;
         }
 
+        /* Product Cards */
         .product-card {
+            padding: 10px;
             background-color: var(--white);
-            border-radius: var(--border-radius);
-            box-shadow: 0 4px 8px var(--shadow);
-            padding: 15px;
-            width: 320px;
-            height: 380px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 1px solid var(--gray-border);
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .product-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .product-card:hover img {
+            transform: scale(1.05);
         }
 
         .product-card h3 {
-            margin: 10px 0;
-            font-size: 1.2rem;
+            padding: 15px;
+            color: var(--moss-dark);
+            font-size: 1.2em;
+            background-color: var(--light-gray);
         }
 
         .product-card p {
-            font-size: 1rem;
-            margin: 5px 0;
+            padding: 0 15px 15px;
+            color: var(--dark-gray);
         }
-        .product-card img {
-            width: 100%;
-            height: 240px;
-            object-fit: cover;
-            border-radius: var(--border-radius);
-            margin-bottom: 10px;
-            display: block;
-            margin: 0 auto;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .product-card img:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-        }
+
         .product-info {
             display: flex;
-            justify-content: space-between; 
-            width: 100%;
-            align-items: center; 
-            margin-top: 15px;
-            margin-bottom: 10px;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: var(--light-gray);
+            border-top: 1px solid var(--gray-border);
         }
 
+        .price {
+            font-weight: bold;
+            color: var(--moss-dark);
+            font-size: 1.1em;
+        }
 
+        .button-container {
+            display: flex;
+            gap: 8px;
+        }
 
-        /* Style for the buttons */
-        .btn {
-            display: inline-block;
+        .edit-btn, .delete-btn {
             padding: 8px 12px;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
+            font-size: 0.9em;
             border-radius: 5px;
-            transition: background-color 0.3s ease, transform 0.2s ease; /* Add transition for smooth hover effects */
+            transition: all 0.3s ease;
         }
 
-        /* Edit button styling */
         .edit-btn {
-            background-color: blue;
-            color: white;
-            margin-right: 5px;
+            background-color: var(--accent-green);
+            color: var(--white);
         }
 
-        /* Delete button styling */
         .delete-btn {
-            background-color: red;
-            color: white;
+            
+            background-color: var(--accent-red);
+            color: var(--white);
         }
 
-        /* Hover effect for buttons */
-        .edit-btn:hover {
-            background-color: darkblue;
-            transform: scale(1.05); /* Slightly enlarge the button on hover */
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .search-bar {
+                width: 100%;
+                margin-top: 10px;
+            }
+
+            .product-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
-        .delete-btn:hover {
-            background-color: darkred;
-            transform: scale(1.05); /* Slightly enlarge the button on hover */
-        }
-
-        /* Focus effect for buttons (optional) */
-        .btn:focus {
-            outline: none;
-            box-shadow: 0 0 5px rgba(0, 0, 255, 0.5); /* Adds a glow effect when the button is focused */
-        }
-
-        .branch-logo {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            display: block;
-            margin: 0 auto 0px auto;
-            border: 3px solid white;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer;
-        }
-
-                /* Hover Effect - Slight Scale & Glow */
-        .branch-logo:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
-        }
 
     </style>
     <div class="dashboard">
@@ -381,11 +376,11 @@ $productResult = mysqli_query($conn, $productSql);
                 <li><a href="category.php">Category Management</a></li>
                 <li><a href="product_management.php" class="active">Food Management</a></li>
                 
-                <li><a href="user.php">Users</a></li>
+                <li><a href="staff.php">Staff</a></li>
                 <li><a href="review_feedback.php">Ratings & Feedback</a></li>
                 <li><a href="report.php">Report</a></li>
 
-                <li><a href="#">Payments</a></li>
+                <li><a href="profile.php">Profile</a></li>
                 <li><a href="order_history.php">Order History</a></li>
             </ul>
         </div>

@@ -38,241 +38,291 @@ $mostRatedProductName = $mostRatedProduct ? $mostRatedProduct['food_name'] : 'N/
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Canteen Branch Dashboard</title>
-    <style>
-       :root {
-    --mint: #A8D5BA;
-    --sage: #C1DAB4;
-    --moss: #6D8B74;
-    --white: #FFFFFF;
-    --gray: #F5F5F5;
-    --dark-gray: #3A3A3A;
-    }
+    <!-- <link rel="stylesheet" href="side_bar.css"> -->
 
-        body {
+    <style>
+        :root {
+            --white: #ffffff;
+            --moss-dark: #2a5848;
+            --moss-light: #3c7a66;
+            --mint: #97c1a9;
+            --mint-light: #b8d8c0;
+            --light-gray: #f7f9f8;
+            --gray-border: #e0e6e3;
+            --dark-gray: #333;
+            --accent-red: #e74c3c;
+            --accent-green: #2ecc71;
+        }
+
+        * {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: var(--gray);
-            color: var(--dark-gray);
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         .dashboard {
             display: flex;
-            height: 100vh;
-            width: 100%;
-            overflow: hidden; /* Prevent any unwanted scrolling */
-        }
-        /* Circular Logo in Sidebar */
-        .branch-logo {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            display: block;
-            margin: 0 auto 0px auto;
-            border: 3px solid white;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer;
+            min-height: 100vh;
+            background-color: var(--light-gray);
         }
 
-        /* Hover Effect - Slight Scale & Glow */
-        .branch-logo:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
-        }
-
-        /* Full-Screen Logo Preview */
-        .full-screen-logo {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7); /* Dark transparent background */
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        /* Full Logo Image */
-        .full-screen-logo img {
-            max-width: 80%;
-            max-height: 80%;
-            border-radius: 10px;
-        }
-
-        /* Close Button */
-        .close-btn {
-            position: absolute;
-            top: 20px;
-            right: 30px;
-            font-size: 40px;
-            color: white;
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-
-        .close-btn:hover {
-            color: red;
-        }
-
-
+        /* Sidebar Styling */
         .sidebar {
-            width: 250px;
-            background-color: var(--moss);
+            width: 280px;
+            background: linear-gradient(to bottom, var(--moss-dark), var(--moss-light));
             color: var(--white);
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            position: fixed;
-            height: 100%;
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); /* Add slight shadow for clarity */
+            padding: 30px 0;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.1);
         }
 
         .sidebar .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 30px;
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .sidebar .logo img {
+            width: 180px;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 5px solid var(--mint);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar .logo img:hover {
+            transform: scale(1.05);
+        }
+
+        .sidebar .logo span {
+            display: block;
+            color: var(--white);
+            font-size: 1.5em;
+            margin-top: 10px;
         }
 
         .sidebar ul {
             list-style: none;
-            padding: 0;
         }
 
         .sidebar ul li {
             margin: 15px 0;
+            position: relative;
         }
 
         .sidebar ul li a {
+            color: var(--white); 
             text-decoration: none;
-            color: var(--white);
-            font-size: 1rem;
-            padding: 10px;
-            border-radius: 5px;
+            padding: 12px 25px;
             display: block;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .sidebar ul li a::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: var(--mint);
+            display: block;
+            top: 0;
+            left: -100%;
+            transition: all 0.3s ease;
+            z-index: -1;
+        }
+
+        .sidebar ul li a:hover::before,
+        .sidebar ul li a.active::before {
+            left: 0;
         }
 
         .sidebar ul li a:hover,
         .sidebar ul li a.active {
-            background-color: var(--mint);
+            color: var(--moss-dark);
             font-weight: bold;
-            color: var(--dark-gray);
         }
 
-        /* Main Content */
+        /* Main Content Styling */
         .main-content {
-            margin-left: 250px; /* Account for the fixed sidebar width */
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
+            flex-grow: 1;
+            background-color: var(--light-gray);
+            overflow-y: auto;
         }
 
         .header {
-            background-color: var(--sage);
-            padding: 30px;
+            background-color: var(--white);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-radius: 10px;
+            padding: 20px 30px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .header input {
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid var(--moss);
-            width: 300px;
+            padding: 10px 15px;
+            border: 1px solid var(--gray-border);
+            border-radius: 8px;
+            width: 250px;
+            transition: all 0.3s ease;
+        }
+
+        .header input:focus {
+            outline: none;
+            border-color: var(--moss-dark);
+            box-shadow: 0 0 0 3px rgba(151,193,169,0.2);
+        }
+
+        .btn {
+            background-color: var(--moss-dark);
+            color: var(--white);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            background-color: var(--mint);
+            color: var(--moss-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
         .content {
-            flex: 1;
             padding: 30px;
-            margin-top: 20px;
-            background-color: var(--white);
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
-        /* Cards Section */
+        .content h1 {
+            color: var(--moss-dark);
+            margin-bottom: 10px;
+            border-bottom: 2px solid var(--mint);
+            padding-bottom: 10px;
+        }
+
+        .content h2 {
+            color: var(--moss-light);
+            margin-bottom: 20px;
+        }
+
         .dashboard-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
         .card {
             background-color: var(--white);
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            padding: 20px;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid var(--gray-border);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
         }
 
         .card h3 {
-            margin-top: 0;
+            color: var(--moss-dark);
+            margin-bottom: 15px;
+            font-size: 1.2em;
         }
 
-        /* Order Table */
+        .card p {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--moss-light);
+        }
+
+        .order-list {
+            background-color: var(--white);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid var(--gray-border);
+        }
+
+        .order-list h2 {
+            color: var(--moss-dark);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--mint);
+            padding-bottom: 10px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
         }
 
-        table th,
-        table td {
-            border: 1px solid var(--gray);
-            padding: 10px;
+        table thead {
+            background-color: var(--light-gray);
+        }
+
+        table th, table td {
+            padding: 15px;
             text-align: left;
+            border-bottom: 1px solid var(--gray-border);
         }
 
-        table th {
-            background-color: var(--mint);
-            color: var(--dark-gray);
-        }
-
-        table tbody tr:nth-child(even) {
-            background-color: var(--gray);
-        }
-
-        /* Button Styles */
-        .btn {
-            background-color: var(--mint);
-            color: var(--dark-gray);
-            padding: 10px 20px;
+        .btn-ready {
+            background-color: var(--accent-green);
+            color: var(--white);
             border: none;
-            border-radius: 5px;
+            padding: 10px 15px;
+            border-radius: 8px;
             cursor: pointer;
-            margin-top: 10px;
-            display: inline-block;
+            transition: all 0.3s ease;
         }
 
-        .btn:hover {
-            background-color: var(--sage);
+        .btn-ready:hover {
+            background-color: var(--moss-light);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
-        /* Responsive Adjustments */
-        @media (max-width: 768px) {
+        /* Responsive Design */
+        @media screen and (max-width: 1200px) {
+            .dashboard-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media screen and (max-width: 768px) {
             .sidebar {
-                width: 200px;
+                width: 100%;
+                height: auto;
             }
 
-            .main-content {
-                margin-left: 200px;
+            .dashboard-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
             }
 
             .header input {
                 width: 100%;
+                margin-bottom: 10px;
             }
         }
-
     </style>
 </head>
 <body>
     <div class="dashboard">
-        <!-- Sidebar -->
+        
         <div class="sidebar">
         <div class="logo">
             <?php if (!empty($row['logo'])): ?>
@@ -282,17 +332,18 @@ $mostRatedProductName = $mostRatedProduct ? $mostRatedProduct['food_name'] : 'N/
             <?php endif; ?>
         </div>
 
-        <!-- Full-Screen Logo Preview -->
+        
 
 
             <ul>
                 <li><a href="dashboard.php" class="active">Dashboard</a></li>
                 <li><a href="category.php">Category Management</a></li>
                 <li><a href="product_management.php">Food Management</a></li>
-                <li><a href="user.php">Users</a></li>
+                <li><a href="staff.php">Staff</a></li>
+                
                 <li><a href="review_feedback.php">Ratings & Feedback</a></li>
                 <li><a href="report.php">Report</a></li>
-                <li><a href="#">Payments</a></li>
+                <li><a href="profile.php">Profile</a></li>
                 <li><a href="order_history.php">Order History</a></li>
             </ul>
         </div>
@@ -367,18 +418,7 @@ $mostRatedProductName = $mostRatedProduct ? $mostRatedProduct['food_name'] : 'N/
             </div>
         </div>
     </div>
-    <div class="overlay" id="logoOverlay">
-    <span class="close-btn" onclick="closeLogo()">&times;</span>
-    <img src="./uploads/<?php echo $branchLogo; ?>" alt="Full Logo">
-    </div>
 
-<script>
-    function openLogo() {
-        document.getElementById('logoOverlay').style.display = 'flex';
-    }
-    function closeLogo() {
-        document.getElementById('logoOverlay').style.display = 'none';
-    }
 </script>
 </body>
 </html>

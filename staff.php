@@ -319,34 +319,12 @@ $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
         
         }
 
-        /* Enhanced delete button styling */
-        /* button.delete-btn {
-            background-color: var(--accent-red);
-            color: var(--white);
-            border: none;
-            padding: 8px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            font-size: 0.9em;
-            letter-spacing: 1px;
-            font-weight: bold;
-        }
-
-        .delete-btn:hover,
-        button.delete-btn:hover {
-            background-color: #c0392b;
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        } */
-
-        /* Form group for better organization */
+       
         .form-group {
             margin-bottom: 15px;
         }
 
-        /* Responsive Design */
+        
         @media screen and (max-width: 1200px) {
             .dashboard {
                 flex-direction: column;
@@ -369,7 +347,7 @@ $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
             }
 
             .form-section form {
-                grid-template-columns: 1fr; /* Single column on mobile */
+                grid-template-columns: 1fr; 
             }
 
             .list-section table {
@@ -398,9 +376,8 @@ $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
                 <li><a href="category.php">Category Management</a></li>
                 <li><a href="product_management.php">Food Management</a></li>
                 <li><a href="staff.php" class="active">Staff</a></li>
-                <li><a href="review_feedback.php">Ratings & Feedback</a></li>
                 <li><a href="report.php">Report</a></li>
-                <li><a href="#">Payments</a></li>
+                <li><a href="profile.php">Profile</a></li>
                 <li><a href="order_history.php">Order History</a></li>
             </ul>
         </div>

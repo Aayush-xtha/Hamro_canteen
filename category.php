@@ -368,7 +368,6 @@ if($result->num_rows >0){
                 <li><a href="product_management.php">Food Management</a></li>
                 <li><a href="staff.php">Staff</a></li>
                 
-                <li><a href="review_feedback.php">Ratings & Feedback</a></li>
                 <li><a href="report.php">Report</a></li>
 
                 <li><a href="profile.php">Profile</a></li>

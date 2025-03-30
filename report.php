@@ -7,11 +7,12 @@ if (!isset($_SESSION['id'])) {
     header("Location: index.php");
     exit();
 }
+
 $branch_id = $_SESSION['id'];
 
 $sql = "SELECT * FROM branches WHERE id = '$branch_id'";
 $result = mysqli_query($conn, $sql);
-if ($result->num_rows > 0) {
+if($result->num_rows >0){
     $row = $result->fetch_assoc();
     $branchName = $row['branch_name'];
 }
@@ -55,7 +56,6 @@ while ($row = mysqli_fetch_assoc($paymentResult)) {
 }
 
 // Fetch most sold food items
-// Fetch most sold food items
 $topFoodSql = "
     SELECT f.food_name, SUM(od.quantity) AS total_quantity
     FROM order_details od
@@ -72,7 +72,7 @@ $foodLabels = [];
 $foodData = [];
 
 while ($row = mysqli_fetch_assoc($topFoodResult)) {
-    $foodLabels[] = $row['food_name'];  // Corrected from 'product_name' to 'food_name'
+    $foodLabels[] = $row['food_name'];  // Fixed 'product_name' to 'food_name'
     $foodData[] = $row['total_quantity'];
 }
 
@@ -95,7 +95,6 @@ while ($row = mysqli_fetch_assoc($monthlySalesResult)) {
     $monthIndex = (int)$row['month'] - 1;
     $salesData[$monthIndex] = (float)$row['monthly_sales'];
 }
-
 
 // Fetch online vs cash payment comparison
 $paymentComparisonSql = "
@@ -123,6 +122,7 @@ while ($row = mysqli_fetch_assoc($paymentComparisonResult)) {
     $paymentTypeData[] = $row['count'];
     $paymentAmountData[] = $row['total_amount'];
 }
+
 ?>
 
 
@@ -500,12 +500,11 @@ while ($row = mysqli_fetch_assoc($paymentComparisonResult)) {
                     <span><?php echo $branchName ?></span>
                 <?php endif; ?>
             </div>
-            <ul>
+            <ul> 
                 <li><a href="dashboard.php">Dashboard</a></li>
                 <li><a href="category.php">Category Management</a></li>
                 <li><a href="product_management.php">Food Management</a></li>
                 <li><a href="staff.php">Staff</a></li>
-                <li><a href="review_feedback.php">Ratings & Feedback</a></li>
                 <li><a href="report.php" class="active">Report</a></li>
                 <li><a href="profile.php">Profile</a></li>
                 <li><a href="order_history.php">Order History</a></li>

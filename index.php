@@ -123,6 +123,7 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
         max-width: 150px;
         height: auto;
         margin-bottom: 20px;
+        
     }
 
     .logo-card h1 {

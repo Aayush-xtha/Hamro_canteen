@@ -409,12 +409,173 @@ if ($result && mysqli_num_rows($result) > 0) {
             width: 90%;
         }
     }
+    /* Modal Styling */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        overflow: auto;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .modal-content {
+        background-color: var(--white);
+        margin: 5% auto;
+        padding: 30px;
+        border-radius: 15px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        position: relative;
+        animation: slideDown 0.4s ease;
+    }
+
+    @keyframes slideDown {
+        from { transform: translateY(-50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .close {
+        position: absolute;
+        top: 20px;
+        right: 25px;
+        color: var(--dark-gray);
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .close:hover {
+        color: var(--moss-dark);
+        transform: scale(1.1);
+    }
+
+    .modal-content h2 {
+        color: var(--moss-dark);
+        margin-bottom: 25px;
+        text-align: center;
+        border-bottom: 2px solid var(--mint);
+        padding-bottom: 15px;
+        font-size: 24px;
+    }
+
+    #editProfileForm {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    #editProfileForm label {
+        font-weight: bold;
+        color: var(--moss-dark);
+        margin-bottom: 5px;
+        display: block;
+    }
+
+    #editProfileForm input[type="text"],
+    #editProfileForm input[type="email"] {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid var(--gray-border);
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-size: 16px;
+        background-color: var(--light-gray);
+    }
+
+    #editProfileForm input[type="file"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px dashed var(--gray-border);
+        border-radius: 8px;
+        background-color: var(--light-gray);
+        transition: all 0.3s ease;
+    }
+
+    #editProfileForm input:focus {
+        outline: none;
+        border-color: var(--moss-dark);
+        box-shadow: 0 0 0 3px rgba(151, 193, 169, 0.2);
+        background-color: var(--white);
+    }
+
+    #editProfileForm .btn {
+        background-color: var(--moss-dark);
+        color: var(--white);
+        border: none;
+        padding: 14px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: bold;
+        margin-top: 10px;
+        font-size: 16px;
+        align-self: center;
+    }
+
+    #editProfileForm .btn:hover {
+        background-color: var(--mint);
+        color: var(--moss-dark);
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Logo Preview */
+    .logo-preview {
+        text-align: center;
+        margin: 15px 0;
+    }
+
+    .logo-preview img {
+        max-width: 120px;
+        max-height: 120px;
+        border-radius: 50%;
+        border: 3px solid var(--mint);
+        padding: 3px;
+    }
+
+    /* Responsive Design */
+    @media screen and (max-width: 768px) {
+        .modal-content {
+            width: 95%;
+            margin: 10% auto;
+            padding: 20px;
+        }
+        
+        .modal-content h2 {
+            font-size: 20px;
+        }
+        
+        #editProfileForm input {
+            font-size: 14px;
+        }
+        
+        .close {
+            top: 15px;
+            right: 20px;
+            font-size: 24px;
+        }
+    }
     </style>
+
 </head>
 <body>
     <div class="dashboard">
         <div class="sidebar">
-            <div class="logo">
+        <div class="logo">
                 <?php if (!empty($row['logo'])): ?>
                     <img src="./uploads/<?php echo $row['logo']; ?>" alt="Branch Logo">
                 <?php else: ?>
@@ -426,7 +587,6 @@ if ($result && mysqli_num_rows($result) > 0) {
                 <li><a href="category.php">Category Management</a></li>
                 <li><a href="product_management.php">Food Management</a></li>
                 <li><a href="staff.php">Staff</a></li>
-                <li><a href="review_feedback.php">Ratings & Feedback</a></li>
                 <li><a href="report.php">Report</a></li>
                 <li><a href="profile.php" class="active">Profile</a></li>
                 <li><a href="order_history.php">Order History</a></li>
@@ -467,13 +627,12 @@ if ($result && mysqli_num_rows($result) > 0) {
 
                 <div style="margin-top: 20px;">
                     <button class="btn" onclick="openEditModal()">Edit Profile</button>
-                    <button class="btn" onclick="openLogoModal()">Change Logo</button>
                 </div>
             </div>
 
             <div class="password-section">
                 <h2>Security Settings</h2>
-                <form action="change_password.php" method="POST">
+                <form id="passwordForm">
                     <div class="form-group">
                         <label for="current_password">Current Password</label>
                         <input type="password" id="current_password" name="current_password" required>
@@ -488,18 +647,90 @@ if ($result && mysqli_num_rows($result) > 0) {
                     </div>
                     <button type="submit" class="btn">Change Password</button>
                 </form>
+                <p id="passwordMessage"></p>
             </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <h2>Edit Profile</h2>
+            <form id="editProfileForm" enctype="multipart/form-data">
+                <label>Branch Name</label>
+                <input type="text" name="branch_name" value="<?php echo htmlspecialchars($row['branch_name']); ?>" required>
+
+                <label>Email Address</label>
+                <input type="email" name="email" value="<?php echo htmlspecialchars($row['email']); ?>" required>
+
+                <label>Phone Number</label>
+                <input type="text" name="phone_number" value="<?php echo htmlspecialchars($row['phone_number']); ?>" required>
+
+                <label>Address</label>
+                <input type="text" name="address" value="<?php echo htmlspecialchars($row['address']); ?>" required>
+
+                <label>Change Logo</label>
+                <input type="file" name="logo">
+
+                <button type="submit" class="btn">Save Changes</button>
+            </form>
         </div>
     </div>
 
     <script>
         function openEditModal() {
-            alert("Edit Profile function not implemented yet.");
+            document.getElementById("editModal").style.display = "block";
         }
 
-        function openLogoModal() {
-            alert("Change Logo function not implemented yet.");
+        function closeEditModal() {
+            document.getElementById("editModal").style.display = "none";
         }
+                
+        document.querySelector('input[name="logo"]').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                
+                let previewContainer = document.querySelector('.logo-preview');
+                if (!previewContainer) {
+                    previewContainer = document.createElement('div');
+                    previewContainer.className = 'logo-preview';
+                    this.parentNode.insertBefore(previewContainer, this.nextSibling);
+                }
+                
+                reader.onload = function(event) {
+                    previewContainer.innerHTML = `<img src="${event.target.result}" alt="Logo Preview">`;
+                }
+                
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById("editProfileForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            let formData = new FormData(this);
+
+            fetch("update_profile.php", {
+                method: "POST",
+                body: formData
+            }).then(response => response.text()).then(data => {
+                alert(data);
+                location.reload();
+            });
+        });
+
+        document.getElementById("passwordForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            let formData = new FormData(this);
+
+            fetch("change_password.php", {
+                method: "POST",
+                body: formData
+            }).then(response => response.text()).then(data => {
+                document.getElementById("passwordMessage").innerText = data;
+            });
+        });
     </script>
 </body>
 </html>

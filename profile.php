@@ -706,6 +706,31 @@ if ($result && mysqli_num_rows($result) > 0) {
                 reader.readAsDataURL(file);
             }
         });
+        document.getElementById("passwordForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+
+            fetch("change_password.php", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                const messageEl = document.getElementById("passwordMessage");
+                messageEl.textContent = data.message;
+                messageEl.style.color = data.status === "success" ? "green" : "red";
+
+                if (data.status === "success") {
+                    this.reset();
+                }
+            })
+            .catch(err => {
+                console.error("Error:", err);
+                document.getElementById("passwordMessage").textContent = "Something went wrong.";
+            });
+        });
+
 
         document.getElementById("editProfileForm").addEventListener("submit", function(event) {
             event.preventDefault();

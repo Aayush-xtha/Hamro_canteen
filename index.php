@@ -123,7 +123,6 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
         max-width: 150px;
         height: auto;
         margin-bottom: 20px;
-        
     }
 
     .logo-card h1 {
@@ -294,7 +293,7 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
   <div class="main-container">
     <!-- Logo Card -->
     <div class="logo-card">
-      <img src="./uploads/logo.png" alt="Kina aakoo Logo" onerror="this.src='https://via.placeholder.com/150x150?text=Kina+aakoo';this.onerror='';">
+      <img src="./uploads/logo.png" alt="Kina aakoo Logo" onerror="this.src='uploads/Screenshot 2025-03-11 120820.png">
       <h1>Hamro Canteen</h1>
       <p>Canteen Management System</p>
     </div>

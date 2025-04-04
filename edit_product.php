@@ -50,13 +50,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Update product details in the database
     $updateQuery = "UPDATE foods SET 
-                    food_name = '$foodName', 
-                    price = '$price', 
-                    description = '$description', 
-                    image = '$filename',
-                    category_id = '$categoryId',
-                    updated_at = '$date' 
-                    WHERE id = '$productId'";
+    food_name = '$foodName', 
+    price = '$price', 
+    description = '$description', 
+    image = '$filename',
+    category_id = '$categoryId'
+    WHERE id = '$productId'";
+
 
     if (mysqli_query($conn, $updateQuery)) {
         $_SESSION['flash_message'] = "Product updated successfully.";

@@ -1,3 +1,3 @@
 <?php
-$base = "http://172.25.2.132/login/";
-$image_base ="http://172.25.2.132/login/uploads/";
+$base = "http://192.168.1.69/login/";
+$image_base ="http://192.168.1.69/login/uploads/";

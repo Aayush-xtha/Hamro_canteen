@@ -10,69 +10,74 @@ if (!isset($_SESSION['id'])) {
 
 $branch_id = $_SESSION['id'];
 
+// Get branch details
 $sql = "SELECT * FROM branches WHERE id = '$branch_id'";
 $result = mysqli_query($conn, $sql);
-if($result->num_rows >0){
-    $row = $result->fetch_assoc();
-    $branchName = $row['branch_name'];
+if($result && $result->num_rows > 0){
+    $branch = mysqli_fetch_assoc($result);
+    $branchName = $branch['branch_name'];
+    $branchLogo = $branch['logo'];
+} else {
+    $branchName = "Branch";
+    $branchLogo = "";
 }
 
-// Fetch total sales amount per branch
+// Set date filters
+$startDate = isset($_GET['start']) ? $_GET['start'] : date('Y-m-01');
+$endDate = isset($_GET['end']) ? $_GET['end'] : date('Y-m-d');
+
+// Date filter condition
+$dateFilter = " AND (o.order_date BETWEEN '$startDate' AND '$endDate 23:59:59')";
+
+// Fetch total sales amount per branch with date filter
 $totalSalesSql = "
     SELECT SUM(o.total_amount) AS total_sales
     FROM orders o
     JOIN order_details od ON o.id = od.order_id
-    WHERE od.branch_id = '$branch_id'
-";
+    WHERE od.branch_id = '$branch_id'" . $dateFilter;
 $totalSalesResult = mysqli_query($conn, $totalSalesSql);
 $totalSales = mysqli_fetch_assoc($totalSalesResult)['total_sales'] ?? 0;
 
-// Fetch total sold food count per branch
+// Fetch total sold food count per branch with date filter
 $totalSoldFoodSql = "
     SELECT SUM(od.quantity) AS total_sold
     FROM order_details od
-    WHERE od.branch_id = '$branch_id'
-";
+    JOIN orders o ON od.order_id = o.id
+    WHERE od.branch_id = '$branch_id'" . $dateFilter;
 $totalSoldFoodResult = mysqli_query($conn, $totalSoldFoodSql);
 $totalSoldFood = mysqli_fetch_assoc($totalSoldFoodResult)['total_sold'] ?? 0;
 
-// Fetch payment method statistics per branch
+// Fetch payment method statistics per branch with date filter
 $paymentSql = "
     SELECT p.method AS payment_method, COUNT(*) AS count
     FROM orders o
     JOIN order_details od ON o.id = od.order_id
     JOIN payments p ON p.order_detail_id = od.id
-    WHERE od.branch_id = '$branch_id'
-    GROUP BY p.method
-";
+    WHERE od.branch_id = '$branch_id'" . $dateFilter . "
+    GROUP BY p.method";
 $paymentResult = mysqli_query($conn, $paymentSql);
-
 $paymentLabels = [];
 $paymentData = [];
-
 while ($row = mysqli_fetch_assoc($paymentResult)) {
     $paymentLabels[] = $row['payment_method'];
     $paymentData[] = $row['count'];
 }
 
-// Fetch most sold food items
+// Fetch most sold food items with date filter
 $topFoodSql = "
     SELECT f.food_name, SUM(od.quantity) AS total_quantity
     FROM order_details od
     JOIN foods f ON od.food_id = f.id
-    WHERE od.branch_id = '$branch_id'
+    JOIN orders o ON od.order_id = o.id
+    WHERE od.branch_id = '$branch_id'" . $dateFilter . "
     GROUP BY od.food_id
     ORDER BY total_quantity DESC
-    LIMIT 5
-";
-
+    LIMIT 5";
 $topFoodResult = mysqli_query($conn, $topFoodSql);
-
 $foodLabels = [];
 $foodData = [];
-
 while ($row = mysqli_fetch_assoc($topFoodResult)) {
-    $foodLabels[] = $row['food_name'];  // Fixed 'product_name' to 'food_name'
+    $foodLabels[] = $row['food_name']; 
     $foodData[] = $row['total_quantity'];
 }
 
@@ -84,19 +89,16 @@ $monthlySalesSql = "
     JOIN order_details od ON o.id = od.order_id
     WHERE od.branch_id = '$branch_id' AND YEAR(o.order_date) = '$currentYear'
     GROUP BY MONTH(o.order_date)
-    ORDER BY month
-";
+    ORDER BY month";
 $monthlySalesResult = mysqli_query($conn, $monthlySalesSql);
-
 $monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 $salesData = array_fill(0, 12, 0);
-
 while ($row = mysqli_fetch_assoc($monthlySalesResult)) {
     $monthIndex = (int)$row['month'] - 1;
     $salesData[$monthIndex] = (float)$row['monthly_sales'];
 }
 
-// Fetch online vs cash payment comparison
+// Fetch online vs cash payment comparison with date filter
 $paymentComparisonSql = "
     SELECT 
         CASE 
@@ -108,24 +110,18 @@ $paymentComparisonSql = "
     FROM orders o
     JOIN order_details od ON o.id = od.order_id
     JOIN payments p ON p.order_detail_id = od.id
-    WHERE od.branch_id = '$branch_id'
-    GROUP BY payment_type
-";
+    WHERE od.branch_id = '$branch_id'" . $dateFilter . "
+    GROUP BY payment_type";
 $paymentComparisonResult = mysqli_query($conn, $paymentComparisonSql);
-
 $paymentTypeLabels = [];
 $paymentTypeData = [];
 $paymentAmountData = [];
-
 while ($row = mysqli_fetch_assoc($paymentComparisonResult)) {
     $paymentTypeLabels[] = $row['payment_type'];
     $paymentTypeData[] = $row['count'];
     $paymentAmountData[] = $row['total_amount'];
 }
-
 ?>
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -133,371 +129,19 @@ while ($row = mysqli_fetch_assoc($paymentComparisonResult)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sales Reports</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-    /* Root Variables */
-    :root {
-        --white: #ffffff;
-        --moss-dark: #2a5848;
-        --moss-light: #3c7a66;
-        --mint: #97c1a9;
-        --mint-light: #b8d8c0;
-        --light-gray: #f7f9f8;
-        --gray-border: #e0e6e3;
-        --dark-gray: #333;
-        --accent-red: #e74c3c;
-        --accent-green: #2ecc71;
-        --accent-blue: #3498db;
-        --accent-orange: #f39c12;
-        --accent-purple: #9b59b6;
-    }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="report.css">
 
-    /* Reset */
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    .dashboard {
-        display: flex;
-        min-height: 100vh;
-        background-color: var(--light-gray);
-    }
- /* Sidebar Styling */
- .sidebar {
-            width: 280px;
-            background: linear-gradient(to bottom, var(--moss-dark), var(--moss-light));
-            color: var(--white);
-            padding: 30px 0;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.1);
-        }
-
-        .sidebar .logo {
-            text-align: center;
-            margin-bottom: 40px;
-            position: relative;
-        }
-
-        .sidebar .logo img {
-            width: 180px;
-            height: 180px;
-            object-fit: cover;
-            border-radius: 50%;
-            border: 5px solid var(--mint);
-            transition: transform 0.3s ease;
-        }
-
-        .sidebar .logo img:hover {
-            transform: scale(1.05);
-        }
-
-        .sidebar .logo span {
-            display: block;
-            color: var(--white);
-            font-size: 1.5em;
-            margin-top: 10px;
-        }
-
-        .sidebar ul {
-            list-style: none;
-        }
-
-        .sidebar ul li {
-            margin: 15px 0;
-            position: relative;
-        }
-
-        .sidebar ul li a {
-            color: var(--white); 
-            text-decoration: none;
-            padding: 12px 25px;
-            display: block;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            z-index: 1;
-        }
-
-        .sidebar ul li a::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background-color: var(--mint);
-            display: block;
-            top: 0;
-            left: -100%;
-            transition: all 0.3s ease;
-            z-index: -1;
-        }
-
-        .sidebar ul li a:hover::before,
-        .sidebar ul li a.active::before {
-            left: 0;
-        }
-
-        .sidebar ul li a:hover,
-        .sidebar ul li a.active {
-            color: var(--moss-dark);
-            font-weight: bold;
-        }
-    /* Main Content Styling */
-    .container {
-        flex-grow: 1;
-        background-color: var(--light-gray);
-        overflow-y: auto;
-        padding: 30px;
-    }
-
-    h1 {
-        color: var(--moss-dark);
-        margin-bottom: 20px;
-        border-bottom: 2px solid var(--mint);
-        padding-bottom: 10px;
-        text-align: center;
-    }
-
-    /* Stats Cards */
-    .stats-container {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 20px;
-        margin-bottom: 30px;
-    }
-
-    .stat-card {
-        background-color: var(--white);
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        border: 1px solid var(--gray-border);
-        text-align: center;
-        transition: transform 0.3s ease;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-5px);
-    }
-
-    .stat-card h3 {
-        color: var(--moss-light);
-        margin-bottom: 10px;
-        font-size: 1.2rem;
-    }
-
-    .stat-card .value {
-        font-size: 1.8rem;
-        font-weight: bold;
-        color: var(--moss-dark);
-    }
-
-    .stat-card .icon {
-        font-size: 2.5rem;
-        margin-bottom: 15px;
-        color: var(--mint);
-    }
-
-    /* Chart Sections */
-    .chart-section {
-        background-color: var(--white);
-        border-radius: 15px;
-        padding: 25px;
-        margin-bottom: 30px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        border: 1px solid var(--gray-border);
-    }
-
-    .chart-section h2 {
-        color: var(--moss-light);
-        margin-bottom: 20px;
-        border-bottom: 2px solid var(--mint);
-        padding-bottom: 10px;
-        text-align: center;
-    }
-
-    .chart-container {
-        position: relative;
-        height: 300px;
-        margin: 0 auto;
-    }
-
-    .chart-row {
-        display: flex;
-        gap: 20px;
-        margin-bottom: 30px;
-    }
-
-    .chart-col {
-        flex: 1;
-        background-color: var(--white);
-        border-radius: 15px;
-        padding: 25px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        border: 1px solid var(--gray-border);
-    }
-
-    .chart-col h2 {
-        color: var(--moss-light);
-        margin-bottom: 20px;
-        border-bottom: 2px solid var(--mint);
-        padding-bottom: 10px;
-        text-align: center;
-    }
-
-    /* Date Range Selector */
-    .date-selector {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 30px;
-        gap: 15px;
-    }
-
-    .date-selector input {
-        padding: 10px 15px;
-        border: 1px solid var(--gray-border);
-        border-radius: 8px;
-        transition: all 0.3s ease;
-    }
-
-    .date-selector input:focus {
-        outline: none;
-        border-color: var(--moss-dark);
-        box-shadow: 0 0 0 3px rgba(151,193,169,0.2);
-    }
-
-    .date-selector button {
-        background-color: var(--moss-dark);
-        color: var(--white);
-        border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .date-selector button:hover {
-        background-color: var(--mint);
-        color: var(--moss-dark);
-    }
-
-    /* Payment Comparison */
-    .payment-comparison {
-        display: flex;
-        justify-content: space-around;
-        margin-top: 20px;
-    }
-
-    .payment-type {
-        text-align: center;
-        padding: 20px;
-        border-radius: 10px;
-        width: 45%;
-    }
-
-    .payment-type.cash {
-        background-color: rgba(151, 193, 169, 0.2);
-        border: 1px solid var(--mint);
-    }
-
-    .payment-type.online {
-        background-color: rgba(52, 152, 219, 0.2);
-        border: 1px solid var(--accent-blue);
-    }
-
-    .payment-type h3 {
-        margin-bottom: 10px;
-        color: var(--moss-dark);
-    }
-
-    .payment-type .amount {
-        font-size: 1.8rem;
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
-
-    .payment-type .count {
-        font-size: 1.2rem;
-        color: var(--dark-gray);
-    }
-
-    /* Export Button */
-    .export-btn {
-        background-color: var(--moss-dark);
-        color: var(--white);
-        border: none;
-        padding: 12px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        font-weight: bold;
-        display: block;
-        margin: 0 auto 30px;
-    }
-
-    .export-btn:hover {
-        background-color: var(--mint);
-        color: var(--moss-dark);
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-
-    /* Responsive Design */
-    @media screen and (max-width: 1200px) {
-        .dashboard {
-            flex-direction: column;
-        }
-
-        .sidebar {
-            width: 100%;
-            height: auto;
-        }
-
-        .sidebar .logo img {
-            width: 120px;
-            height: 120px;
-        }
-
-        .stats-container {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .chart-row {
-            flex-direction: column;
-        }
-    }
-
-    @media screen and (max-width: 768px) {
-        .container {
-            padding: 15px;
-        }
-
-        .stats-container {
-            grid-template-columns: 1fr;
-        }
-
-        .payment-comparison {
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .payment-type {
-            width: 100%;
-        }
-    }
-    </style>
 </head>
 <body>
     <div class="dashboard">
         <div class="sidebar">
             <div class="logo">
-                <?php if (!empty($row['logo'])): ?>
-                    <img src="./uploads/<?php echo $row['logo']; ?>" alt="Branch Logo" class="branch-logo" onclick="openFullScreenLogo('./uploads/<?php echo $row['logo']; ?>')">
+                <?php if (!empty($branchLogo)): ?>
+                    <img src="./uploads/<?php echo htmlspecialchars($branchLogo); ?>" alt="Branch Logo" class="branch-logo" onclick="openFullScreenLogo('./uploads/<?php echo htmlspecialchars($branchLogo); ?>')">
                 <?php else: ?>
-                    <span><?php echo $branchName ?></span>
+                    <span><?php echo htmlspecialchars($branchName); ?></span>
                 <?php endif; ?>
             </div>
             <ul> 
@@ -511,13 +155,13 @@ while ($row = mysqli_fetch_assoc($paymentComparisonResult)) {
             </ul>
         </div>
 
-        <div class="container">
+        <div class="container" id="report-container">
             <h1>Sales & Performance Reports</h1>
             
             <div class="date-selector">
-                <input type="date" id="start-date" value="<?php echo date('Y-m-01'); ?>">
+                <input type="date" id="start-date" value="<?php echo $startDate; ?>">
                 <span>to</span>
-                <input type="date" id="end-date" value="<?php echo date('Y-m-d'); ?>">
+                <input type="date" id="end-date" value="<?php echo $endDate; ?>">
                 <button onclick="filterReports()">Apply Filter</button>
             </div>
 
@@ -605,6 +249,11 @@ while ($row = mysqli_fetch_assoc($paymentComparisonResult)) {
         </div>
     </div>
 
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
     <script>
         // Initialize charts when DOM is loaded
         document.addEventListener("DOMContentLoaded", function () {
@@ -651,6 +300,10 @@ while ($row = mysqli_fetch_assoc($paymentComparisonResult)) {
                                 }
                             }
                         }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeOutQuart'
                     }
                 }
             });
@@ -703,6 +356,10 @@ while ($row = mysqli_fetch_assoc($paymentComparisonResult)) {
                                 minRotation: 45
                             }
                         }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeOutBounce'
                     }
                 }
             });
@@ -737,6 +394,11 @@ while ($row = mysqli_fetch_assoc($paymentComparisonResult)) {
                         legend: {
                             position: 'right'
                         }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 2000
                     }
                 }
             });
@@ -801,6 +463,10 @@ while ($row = mysqli_fetch_assoc($paymentComparisonResult)) {
                                 }
                             }
                         }
+                    },
+                    animation: {
+                        duration: 1800,
+                        easing: 'easeInOutQuart'
                     }
                 }
             });
@@ -811,17 +477,95 @@ while ($row = mysqli_fetch_assoc($paymentComparisonResult)) {
             const startDate = document.getElementById('start-date').value;
             const endDate = document.getElementById('end-date').value;
             
-            // In a real implementation, you would make an AJAX call to fetch filtered data
-            alert(`Reports will be filtered from ${startDate} to ${endDate}. This would be implemented with AJAX in a real application.`);
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates');
+                return;
+            }
             
-            // Reload the page with query parameters
-            // window.location.href = `report.php?start=${startDate}&end=${endDate}`;
+            if (new Date(startDate) > new Date(endDate)) {
+                alert('Start date cannot be after end date');
+                return;
+            }
+            
+            // Show loading overlay
+            document.getElementById('loading-overlay').classList.add('active');
+            
+            // Redirect with date parameters
+            window.location.href = `report.php?start=${startDate}&end=${endDate}`;
         }
 
-        // Function to export reports
+        // Function to export reports as PDF
         function exportReports() {
-            // In a real implementation, you would generate a PDF or Excel file
-            alert('Reports will be exported. This would generate a PDF or Excel file in a real application.');
+            // Show loading overlay
+            document.getElementById('loading-overlay').classList.add('active');
+            
+            // Use jsPDF and html2canvas to create PDF
+            const { jsPDF } = window.jspdf;
+            
+            setTimeout(() => {
+                const reportContainer = document.getElementById('report-container');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const margins = 10;
+                
+                // Add title
+                pdf.setFontSize(18);
+                pdf.setTextColor(42, 88, 72); // moss-dark color
+                pdf.text('Sales & Performance Report', pdfWidth/2, 20, { align: 'center' });
+                
+                // Add date range
+                const startDate = document.getElementById('start-date').value;
+                const endDate = document.getElementById('end-date').value;
+                pdf.setFontSize(12);
+                pdf.setTextColor(60, 122, 102); // moss-light color
+                pdf.text(`Report Period: ${startDate} to ${endDate}`, pdfWidth/2, 30, { align: 'center' });
+                
+                // Add branch name
+                pdf.setFontSize(14);
+                pdf.text(`Branch: <?php echo htmlspecialchars($branchName); ?>`, pdfWidth/2, 40, { align: 'center' });
+                
+                // Add stats
+                pdf.setFontSize(12);
+                pdf.setTextColor(0, 0, 0);
+                pdf.text(`Total Sales: ₹<?php echo number_format($totalSales, 2); ?>`, margins, 55);
+                pdf.text(`Items Sold: <?php echo number_format($totalSoldFood); ?>`, margins, 65);
+                pdf.text(`Avg. Order Value: ₹<?php echo ($totalSoldFood > 0) ? number_format($totalSales / $totalSoldFood, 2) : '0.00'; ?>`, margins, 75);
+                
+                // Capture and add charts
+                html2canvas(document.getElementById('monthlySalesChart')).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    pdf.addImage(imgData, 'PNG', margins, 85, pdfWidth - margins*2, 60);
+                    
+                    html2canvas(document.getElementById('topFoodChart')).then(canvas => {
+                        const imgData = canvas.toDataURL('image/png');
+                        pdf.addImage(imgData, 'PNG', margins, 155, (pdfWidth - margins*3)/2, 60);
+                        
+                        html2canvas(document.getElementById('paymentChart')).then(canvas => {
+                            const imgData = canvas.toDataURL('image/png');
+                            pdf.addImage(imgData, 'PNG', pdfWidth/2, 155, (pdfWidth - margins*3)/2, 60);
+                            
+                            html2canvas(document.getElementById('paymentComparisonChart')).then(canvas => {
+                                const imgData = canvas.toDataURL('image/png');
+                                pdf.addPage();
+                                pdf.addImage(imgData, 'PNG', margins, 20, pdfWidth - margins*2, 60);
+                                
+                                // Add footer
+                                const today = new Date();
+                                pdf.setFontSize(10);
+                                pdf.setTextColor(100, 100, 100);
+                                pdf.text(`Generated on: ${today.toLocaleString()}`, pdfWidth/2, pdfHeight - 10, { align: 'center' });
+                                
+                                // Save the PDF
+                                pdf.save(`Sales_Report_${startDate}_to_${endDate}.pdf`);
+                                
+                                // Hide loading overlay
+                                document.getElementById('loading-overlay').classList.remove('active');
+                            });
+                        });
+                    });
+                });
+            }, 1000);
         }
 
         // Full screen logo view
@@ -843,6 +587,8 @@ while ($row = mysqli_fetch_assoc($paymentComparisonResult)) {
             img.style.maxWidth = '80%';
             img.style.maxHeight = '80%';
             img.style.borderRadius = '10px';
+            img.style.boxShadow = '0 5px 25px rgba(0,0,0,0.5)';
+            img.style.animation = 'fadeIn 0.3s ease-out';
             
             modal.appendChild(img);
             document.body.appendChild(modal);

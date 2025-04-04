@@ -2,25 +2,27 @@
 require_once('../database/db_connection.php');
 require_once('../global.php');
 
-// Get the user_id and branch_id from the URL query parameters
+// Set JSON response header
+header('Content-Type: application/json');
+
+// Get the user_id and branch_id from the query string
 $user_id = isset($_GET['user_id']) ? $_GET['user_id'] : null;
 $branch_id = isset($_GET['branch_id']) ? $_GET['branch_id'] : null;
 
+// Validate input
 if ($user_id && $branch_id) {
-    // Fetch notifications for the user and branch
-    $notificationSql = "SELECT id, message, created_at 
-                        FROM notifications 
-                        WHERE user_id = '$user_id' AND branch_id = '$branch_id'
-                        ORDER BY created_at DESC";
+    // Prepare and execute the query safely
+    $stmt = $conn->prepare("SELECT id, message, created_at FROM notifications WHERE user_id = ? AND branch_id = ? ORDER BY created_at DESC");
+    $stmt->bind_param("ii", $user_id, $branch_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-    $notificationResult = mysqli_query($conn, $notificationSql);
+    $notifications = [];
+    while ($row = $result->fetch_assoc()) {
+        $notifications[] = $row;
+    }
 
-    if (mysqli_num_rows($notificationResult) > 0) {
-        $notifications = [];
-        while ($row = mysqli_fetch_assoc($notificationResult)) {
-            $notifications[] = $row;
-        }
-
+    if (!empty($notifications)) {
         echo json_encode([
             "status" => "success",
             "message" => "Notifications retrieved successfully",
@@ -28,14 +30,18 @@ if ($user_id && $branch_id) {
         ]);
     } else {
         echo json_encode([
-            "status" => "error",
-            "message" => "No notifications found"
+            "status" => "empty",
+            "message" => "No notifications found",
+            "data" => []
         ]);
     }
+
+    $stmt->close();
 } else {
     echo json_encode([
         "status" => "error",
-        "message" => "User ID and Branch ID are required"
+        "message" => "User ID and Branch ID are required",
+        "data" => []
     ]);
 }
 ?>

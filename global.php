@@ -1,3 +1,3 @@
 <?php
-$base = "http://192.168.1.69/login/";
-$image_base ="http://192.168.1.69/login/uploads/";
+$base = "http://192.168.1.69/hamro_canteen_backend/";
+$image_base ="http://192.168.1.69/hamro_canteen_backend/uploads/";

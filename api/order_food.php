@@ -99,6 +99,23 @@ if (isset($_POST['user_id']) && isset($_POST['food_items']) && isset($_POST['bra
             mysqli_query($conn, $insertNotificationSql);
         }
 
+        // Step 6: Remove food items from cart and cart_items
+        foreach ($foodItems as $item) {
+            $foodId = intval($item['food_id']);
+            // Remove from cart_items
+            $deleteCartItemSql = "DELETE FROM cart_items WHERE food_id = '$foodId' AND cart_id IN (SELECT id FROM cart WHERE user_id = '$userId' AND branch_id = '$branchId')";
+            mysqli_query($conn, $deleteCartItemSql);
+        }
+
+        // Remove cart if empty after removing items
+        $checkCartItemsSql = "SELECT COUNT(*) FROM cart_items WHERE cart_id IN (SELECT id FROM cart WHERE user_id = '$userId' AND branch_id = '$branchId')";
+        $cartItemsCountResult = mysqli_query($conn, $checkCartItemsSql);
+        $cartItemsCount = mysqli_fetch_row($cartItemsCountResult)[0];
+        if ($cartItemsCount == 0) {
+            $deleteCartSql = "DELETE FROM cart WHERE user_id = '$userId' AND branch_id = '$branchId'";
+            mysqli_query($conn, $deleteCartSql);
+        }
+
         // Return response with order details
         echo json_encode([
             "status" => "success",

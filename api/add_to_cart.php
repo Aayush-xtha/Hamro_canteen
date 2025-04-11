@@ -33,34 +33,65 @@ if (!$foodData) {
 }
 
 $price = $foodData['price'];
-$total_price = $price * $quantity;
+$item_total = $price * $quantity;
 
-// Check if item already exists in cart
-$cartCheckSql = "SELECT id, quantity FROM cart WHERE user_id = ? AND food_id = ?";
-$stmt = mysqli_prepare($conn, $cartCheckSql);
-mysqli_stmt_bind_param($stmt, "ii", $user_id, $food_id);
+// Check if a cart already exists for the user (you can make it per-branch if needed)
+$cartSql = "SELECT id FROM cart WHERE user_id = ? AND branch_id = ?";
+$stmt = mysqli_prepare($conn, $cartSql);
+mysqli_stmt_bind_param($stmt, "ii", $user_id, $branch_id);
 mysqli_stmt_execute($stmt);
-$cartCheckResult = mysqli_stmt_get_result($stmt);
-$existingCart = mysqli_fetch_assoc($cartCheckResult);
+$cartResult = mysqli_stmt_get_result($stmt);
+$cart = mysqli_fetch_assoc($cartResult);
 
-if ($existingCart) {
-    // Update quantity if item exists
-    $newQuantity = $existingCart['quantity'] + $quantity;
-    $updateCartSql = "UPDATE cart SET quantity = ?, total_price = ? WHERE id = ?";
-    $stmt = mysqli_prepare($conn, $updateCartSql);
-    mysqli_stmt_bind_param($stmt, "idi", $newQuantity, $price * $newQuantity, $existingCart['id']);
-    $cartResult = mysqli_stmt_execute($stmt);
+if ($cart) {
+    $cart_id = $cart['id'];
 } else {
-    // Insert new item if it does not exist
-    $insertCartSql = "INSERT INTO cart (user_id, food_id, quantity, total_price, branch_id) VALUES (?, ?, ?, ?, ?)";
+    // Create a new cart
+    $insertCartSql = "INSERT INTO cart (user_id, branch_id, total_price) VALUES (?, ?, 0)";
     $stmt = mysqli_prepare($conn, $insertCartSql);
-    mysqli_stmt_bind_param($stmt, "iiidi", $user_id, $food_id, $quantity, $total_price, $branch_id);
-    $cartResult = mysqli_stmt_execute($stmt);
+    mysqli_stmt_bind_param($stmt, "ii", $user_id, $branch_id);
+    mysqli_stmt_execute($stmt);
+    $cart_id = mysqli_insert_id($conn);
 }
 
-if ($cartResult) {
-    echo json_encode(["status" => "success", "message" => "Item added to cart successfully"]);
+// Check if food item already exists in cart_items
+$cartItemSql = "SELECT id, quantity FROM cart_items WHERE cart_id = ? AND food_id = ?";
+$stmt = mysqli_prepare($conn, $cartItemSql);
+mysqli_stmt_bind_param($stmt, "ii", $cart_id, $food_id);
+mysqli_stmt_execute($stmt);
+$cartItemResult = mysqli_stmt_get_result($stmt);
+$existingItem = mysqli_fetch_assoc($cartItemResult);
+
+if ($existingItem) {
+    $newQuantity = $existingItem['quantity'] + $quantity;
+    $newItemTotal = $newQuantity * $price;
+
+    // Update quantity and item total
+    $updateItemSql = "UPDATE cart_items SET quantity = ?, item_total_price = ? WHERE id = ?";
+    $stmt = mysqli_prepare($conn, $updateItemSql);
+    mysqli_stmt_bind_param($stmt, "idi", $newQuantity, $newItemTotal, $existingItem['id']);
+    $itemResult = mysqli_stmt_execute($stmt);
 } else {
-    echo json_encode(["status" => "error", "message" => "Failed to add item to cart"]);
+    // Insert new item into cart_items
+    $insertItemSql = "INSERT INTO cart_items (cart_id, food_id, quantity, item_total_price) VALUES (?, ?, ?, ?)";
+    $stmt = mysqli_prepare($conn, $insertItemSql);
+    mysqli_stmt_bind_param($stmt, "iiid", $cart_id, $food_id, $quantity, $item_total);
+    $itemResult = mysqli_stmt_execute($stmt);
+}
+
+// Update total price of cart
+$updateCartTotalSql = "
+    UPDATE cart 
+    SET total_price = (SELECT SUM(item_total_price) FROM cart_items WHERE cart_id = ?) 
+    WHERE id = ?
+";
+$stmt = mysqli_prepare($conn, $updateCartTotalSql);
+mysqli_stmt_bind_param($stmt, "ii", $cart_id, $cart_id);
+mysqli_stmt_execute($stmt);
+
+if ($itemResult) {
+    echo json_encode(["status" => "success", "message" => "Item added/updated in cart successfully"]);
+} else {
+    echo json_encode(["status" => "error", "message" => "Failed to add/update item in cart"]);
 }
 ?>

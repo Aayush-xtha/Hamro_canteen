@@ -7,17 +7,17 @@ if (!isset($_SESSION['id'])) {
     header("Location: index.php");
     exit();
 }
+
 if (isset($_GET['id'])) {
     $id = $_GET['id'];
-    
+
     // Fetch existing category details
-    $sql = "SELECT * FROM categories WHERE Id = $id";
+    $sql = "SELECT * FROM categories WHERE id = $id";
     $result = mysqli_query($conn, $sql);
-    
+
     if (mysqli_num_rows($result) == 1) {
         $row = mysqli_fetch_assoc($result);
         $category_name = $row['category_name'];
-       
         $current_image = $row['image'];
     } else {
         echo "Category not found.";
@@ -26,19 +26,16 @@ if (isset($_GET['id'])) {
 }
 
 // Handle form submission
-if ($_SERVER['REQUEST_METHOD'] == "POST") {
-    $category_name = $_POST['category_name'];
-    
-    
-    // Image upload handling
+if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_GET['id'])) {
+    $id = $_GET['id'];
+    $category_name = mysqli_real_escape_string($conn, $_POST['category_name']);
+
     if (!empty($_FILES['image']['name'])) {
         $image = $_FILES['image']['name'];
         $target_directory = "./uploads/";
         $target_file = $target_directory . basename($image);
-        
-        // Move uploaded file to directory
+
         if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
-            // Delete old image if exists
             if ($current_image && file_exists($target_directory . $current_image)) {
                 unlink($target_directory . $current_image);
             }
@@ -47,11 +44,10 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             exit();
         }
     } else {
-        $image = $current_image; // Keep old image if no new file is uploaded
+        $image = $current_image;
     }
 
-    // Update query
-    $update_sql = "UPDATE category SET category_name='$category_name', image='$image' WHERE Id=$id";
+    $update_sql = "UPDATE categories SET category_name='$category_name', image='$image' WHERE id=$id";
 
     if (mysqli_query($conn, $update_sql)) {
         echo "<script>alert('Category updated successfully!'); window.location='category.php';</script>";
@@ -60,6 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -147,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             <label for="image">New Image (optional):</label>
             <input type="file" id="image" name="image" accept="image/*">
 
-            <button type="submit">Update Menu Item</button>
+            <button type="submit">Update category Item</button>
         </form>
     </div>
 </body>

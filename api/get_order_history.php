@@ -40,9 +40,11 @@ if (isset($_GET['user_id'])) {
                 od.quantity,
                 od.rate,
                 od.sum_total,
+                p.id AS payment_id,
                 p.method AS payment_method,
                 p.amount AS payment_amount,
-                p.payment_date
+                p.payment_date,
+                p.status AS payment_status
             FROM orders o
             LEFT JOIN users u ON o.user_id = u.id
             LEFT JOIN order_details od ON o.id = od.order_id
@@ -68,9 +70,11 @@ if (isset($_GET['user_id'])) {
             od.quantity,
             od.rate,
             od.sum_total,
+            p.id AS payment_id,
             p.method AS payment_method,
             p.amount AS payment_amount,
-            p.payment_date
+            p.payment_date,
+            p.status AS payment_status
         FROM orders o
         LEFT JOIN users u ON o.user_id = u.id
         LEFT JOIN order_details od ON o.id = od.order_id
@@ -103,9 +107,11 @@ if (isset($_GET['user_id'])) {
                     ],
                     'items' => [],
                     'payment' => [
+                        'payment_id'=> $row['payment_id'],
                         'method' => $row['payment_method'],
                         'amount' => $row['payment_amount'],
-                        'payment_date' => $row['payment_date']
+                        'payment_date' => $row['payment_date'],
+                        'payment_status' => (int)$row['payment_status']
                     ]
                 ];
             }

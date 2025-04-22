@@ -9,14 +9,6 @@ CREATE TABLE tokens (
     FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE categories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    category_name VARCHAR(255) NOT NULL,
-    image VARCHAR(255),
-    branch_id INT,
-    FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE ON UPDATE CASCADE
-);
-
 CREATE TABLE users (
     id INT(11) AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(20) NOT NULL,
@@ -31,6 +23,23 @@ CREATE TABLE users (
     branch_id INT(11),
     FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
+CREATE TABLE branches (
+    id INT(11) AUTO_INCREMENT PRIMARY KEY,
+    branch_name VARCHAR(100) NOT NULL,
+    address TEXT NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    phone_number VARCHAR(15) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    logo VARCHAR(255) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    category_name VARCHAR(255) NOT NULL,
+    image VARCHAR(255),
+    branch_id INT,
+    FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
 CREATE TABLE foods (
     id INT(11) AUTO_INCREMENT PRIMARY KEY,
     food_name VARCHAR(100) NOT NULL,
@@ -42,16 +51,7 @@ CREATE TABLE foods (
     FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE TABLE branches (
-    id INT(11) AUTO_INCREMENT PRIMARY KEY,
-    branch_name VARCHAR(100) NOT NULL,
-    address TEXT NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    phone_number VARCHAR(15) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    logo VARCHAR(255) NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+
 CREATE TABLE orders (
     id INT(11) AUTO_INCREMENT PRIMARY KEY,
     user_id INT(11) NOT NULL,
@@ -68,6 +68,7 @@ CREATE TABLE order_details (
     rate DECIMAL(10,2) NOT NULL CHECK (rate >= 0),
     sum_total DECIMAL(10,2) NOT NULL CHECK (sum_total >= 0),
     branch_id INT(11) NOT NULL,
+    is_notified TINTYINT(1),
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (food_id) REFERENCES foods(id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE ON UPDATE CASCADE
@@ -78,6 +79,7 @@ CREATE TABLE payments (
     payment_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     amount DECIMAL(10,2) NOT NULL,
     method VARCHAR(50) NOT NULL,
+    status TINTYINT(4),
     FOREIGN KEY (order_detail_id) REFERENCES order_details(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE notifications (

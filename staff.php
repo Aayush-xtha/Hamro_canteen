@@ -55,7 +55,7 @@ $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
                     <input type="text" name="last_name" placeholder="Last Name" required>
                     <input type="text" name="user_name" placeholder="Username" required>
                     <input type="email" name="email" placeholder="Email" required>
-                    <input type="text" name="address" placeholder="Address" required>
+                    <!-- <input type="text" name="address" placeholder="Address" required> -->
                     <input type="text" name="phone_number" placeholder="Phone Number" required>
                     <select name="gender" required>
                         <option value="">Select Gender</option>

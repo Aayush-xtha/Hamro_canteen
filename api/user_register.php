@@ -14,8 +14,6 @@ if (isset($_POST['first_name']) && isset($_POST['last_name']) && isset($_POST['p
     $confirmPassword = $_POST['confirm_password'];
     $branch_id = $_POST['branch_id']; 
     $date = date("Y-m-d H:i:s");
-
-    // Check if the role is 'user'
     if ($role !== 'user') {
         echo json_encode([ 
             "status" => "error", 
@@ -23,8 +21,6 @@ if (isset($_POST['first_name']) && isset($_POST['last_name']) && isset($_POST['p
         ]);
         exit();
     }
-
-    // Check if the email already exists
     $checkEmailSql = "SELECT * FROM users WHERE email = '$email'";
     $emailResult = mysqli_query($conn, $checkEmailSql);
 
@@ -41,7 +37,7 @@ if (isset($_POST['first_name']) && isset($_POST['last_name']) && isset($_POST['p
         ]);
         exit();
     } else {
-        // Check if the branch_id exists in the branches table
+      
         $checkBranchSql = "SELECT * FROM branches WHERE id = '$branch_id'";
         $branchResult = mysqli_query($conn, $checkBranchSql);
 
@@ -55,7 +51,7 @@ if (isset($_POST['first_name']) && isset($_POST['last_name']) && isset($_POST['p
 
         $hashedPassword = password_hash($confirmPassword, PASSWORD_DEFAULT);
 
-        // Check if an image is uploaded
+
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
             $filename = $_FILES["image"]["name"];
             $tempname = $_FILES["image"]["tmp_name"];
@@ -73,10 +69,9 @@ if (isset($_POST['first_name']) && isset($_POST['last_name']) && isset($_POST['p
         $result = mysqli_query($conn, $insertSql);
 
         if ($result) {
-            // Get the registered user ID
+          
             $userId = mysqli_insert_id($conn);
-            
-            // Generate and store token
+
             $token = bin2hex(random_bytes(32)); 
             $insertTokenSql = "INSERT INTO tokens (user_id, token, created_at, updated_at) VALUES ('$userId', '$token', '$date', '$date')";
             mysqli_query($conn, $insertTokenSql);

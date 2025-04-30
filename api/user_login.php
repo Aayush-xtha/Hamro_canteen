@@ -6,7 +6,7 @@ if (isset($_POST['email']) && isset($_POST['password'])) {
     $email = $_POST['email'];
     $password = $_POST['password'];
 
-    // Check if the user exists and ensure only customers and staff can log in
+   
     $sql = "SELECT u.*, b.branch_name 
             FROM users u
             LEFT JOIN branches b ON u.branch_id = b.id
